@@ -15,6 +15,7 @@ def normalizeRows(x):
     """
 
     ### YOUR CODE HERE
+    x = x / np.sqrt(np.sum(x**2,keepdims=True,axis=1))
     ### END YOUR CODE
 
     return x
