@@ -13,11 +13,7 @@ def normalizeRows(x):
     Implement a function that normalizes each row of a matrix to have
     unit length.
     """
-
-    ### YOUR CODE HERE
     x = x / np.sqrt(np.sum(x**2,keepdims=True,axis=1))
-    ### END YOUR CODE
-
     return x
 
 
@@ -57,9 +53,10 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     assignment!
     """
 
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+    predicted_softmaxed = softmax(predicted)
+    cost =  np.log(predicted_softmaxed[target]) #CE is log of predict probebilty according to 1-hot vector
+    gradPred = np.dot(outputVectors.transpose(), (predicted_softmaxed - predicted))# U[y^hat - y]
+    grad = np.dot((softmax(outputVectors)- outputVectors),predicted)# (y_w^hat - y_w)v_c
 
     return cost, gradPred, grad
 
