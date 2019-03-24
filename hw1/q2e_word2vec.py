@@ -105,13 +105,18 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     gradPred -- dJ/dv_c
     grad -- dJ/dU
     """
-    target_pred_dot_sig = sigmoid(np.dot(outputVectors[indices[0]], predicted))
-    sample_pred_dot_sig = sigmoid(-np.dot(outputVectors[indices[1:]], predicted))
-    log_part = -np.log(target_pred_dot_sig)  # might need to transpose outputvectors
-    sum_part = np.sum(np.log(sample_pred_dot_sig))  # might need to transpose outputvectors
-    cost = log_part - sum_part
-    grad = -1 * np.dot((1 - target_pred_dot_sig), predicted) \
-           + np.sum(np.dot(1 - sample_pred_dot_sig, predicted))
+    target_pred_dot_sig = sigmoid(np.dot(outputVectors[indices[0]], predicted)) # s(u_o^T * v_c)
+    sample_pred_dot_sig = sigmoid(-np.dot(outputVectors[indices[1:]], predicted)) # s(u_k^T * v_c) as whole matrix
+    log_part = np.log(target_pred_dot_sig)
+    sum_part = np.sum(np.log(sample_pred_dot_sig))
+    cost = - log_part - sum_part
+    
+    ## (s(U*v_c) -[1,00]) * v_c
+    e_1 = np.zeros(len(indices))
+    e_1[0] = 1
+    grad = (sigmoid(np.dot(outputVectors[indices], predicted)) - e_1).reshape(-1,1) * predicted
+    
+    ## -(1-s(u_o^T * v_c)) * u_o^T + sum_K[(1-s(-u_k^T * v_c)) * u_k^T]
     gradPred = -1 * np.dot((1 - target_pred_dot_sig), outputVectors[indices[0]]) \
                + np.sum(np.dot((1 - sample_pred_dot_sig), outputVectors[indices[1:]].T))
     ### END YOUR CODE
