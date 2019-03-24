@@ -94,17 +94,17 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
 
     ### YOUR CODE HERE
     """
-        Arguments:
-        predicted -- v_c
-        target -- o in the notations
-        outputVectors -- all the U's (but as rows and not as columns (need to transpose)
-        dataset -- needed for negative sampling, unused here.
+    Arguments:
+    predicted -- v_c
+    target -- o in the notations
+    outputVectors -- all the U's (but as rows and not as columns (need to transpose)
+    dataset -- needed for negative sampling, unused here.
 
-        Return:
-        cost -- neg-sampling cost
-        gradPred -- dJ/dv_c
-        grad -- dJ/dU
-        """
+    Return:
+    cost -- neg-sampling cost
+    gradPred -- dJ/dv_c
+    grad -- dJ/dU
+    """
     target_pred_dot_sig = sigmoid(np.dot(outputVectors[indices[0]], predicted))
     sample_pred_dot_sig = sigmoid(-np.dot(outputVectors[indices[1:]], predicted))
     log_part = -np.log(target_pred_dot_sig)  # might need to transpose outputvectors
