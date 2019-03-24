@@ -93,7 +93,27 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     indices.extend(getNegativeSamples(target, dataset, K))
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    """
+        Arguments:
+        predicted -- v_c
+        target -- o in the notations
+        outputVectors -- all the U's (but as rows and not as columns (need to transpose)
+        dataset -- needed for negative sampling, unused here.
+
+        Return:
+        cost -- neg-sampling cost
+        gradPred -- dJ/dv_c
+        grad -- dJ/dU
+        """
+    target_pred_dot_sig = sigmoid(np.dot(outputVectors[indices[0]], predicted))
+    sample_pred_dot_sig = sigmoid(-np.dot(outputVectors[indices[1:]], predicted))
+    log_part = -np.log(target_pred_dot_sig)  # might need to transpose outputvectors
+    sum_part = np.sum(np.log(sample_pred_dot_sig))  # might need to transpose outputvectors
+    cost = log_part - sum_part
+    grad = -1 * np.dot((1 - target_pred_dot_sig), predicted) \
+           + np.sum(np.dot(1 - sample_pred_dot_sig, predicted))
+    gradPred = -1 * np.dot((1 - target_pred_dot_sig), outputVectors[indices[0]]) \
+               + np.sum(np.dot((1 - sample_pred_dot_sig), outputVectors[indices[1:]].T))
     ### END YOUR CODE
 
     return cost, gradPred, grad
