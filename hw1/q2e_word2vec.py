@@ -58,10 +58,10 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     y[target] = 1
 
     cost =  np.log(y_hat[target]) #CE is log of predict probebilty according to 1-hot vector
-    gradPred = np.dot(outputVectors.transpose(), (y_hat - y))# U[y^hat - y]
+    gradPred = -np.dot(outputVectors.transpose(), (y_hat - y))# U[y^hat - y]
 
-    temp = y_hat - y
-    grad = np.multiply(np.expand_dims(temp, 1),predicted)  # (y_w^hat - y_w)v_c
+    temp = np.expand_dims(y_hat - y, 1)
+    grad = -np.multiply(temp,predicted)  # (y_w^hat - y_w)v_c
 
     return cost, gradPred, grad
 
