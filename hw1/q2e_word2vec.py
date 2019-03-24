@@ -117,8 +117,8 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     grad = (sigmoid(np.dot(outputVectors[indices], predicted)) - e_1).reshape(-1,1) * predicted
     
     ## -(1-s(u_o^T * v_c)) * u_o^T + sum_K[(1-s(-u_k^T * v_c)) * u_k^T]
-    gradPred = -1 * np.dot((1 - target_pred_dot_sig), outputVectors[indices[0]]) \
-               + np.sum(np.dot((1 - sample_pred_dot_sig), outputVectors[indices[1:]].T))
+    gradPred = -1 * (1 - target_pred_dot_sig) * outputVectors[indices[0]] \
+               + np.sum((1 - sample_pred_dot_sig).reshape(-1,1) * outputVectors[indices[1:]], axis=0)
     ### END YOUR CODE
 
     return cost, gradPred, grad
