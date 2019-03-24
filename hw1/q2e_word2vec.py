@@ -61,9 +61,9 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     gradPred = np.dot(outputVectors.transpose(), (y_hat - y))# U[y^hat - y]
 
     temp = y_hat - y
-	grad = np.multiply(np.expand_dims(temp, 1),predicted)  # (y_w^hat - y_w)v_c
+    grad = np.multiply(np.expand_dims(temp, 1),predicted)  # (y_w^hat - y_w)v_c
 
-	return cost, gradPred, grad
+    return cost, gradPred, grad
 
 
 def getNegativeSamples(target, dataset, K):
@@ -119,7 +119,10 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     ## (s(U*v_c) -[1,00]) * v_c
     e_1 = np.zeros(len(indices))
     e_1[0] = 1
-    grad = (sigmoid(np.dot(outputVectors[indices], predicted)) - e_1).reshape(-1,1) * predicted
+    grad_calc = (sigmoid(np.dot(outputVectors[indices], predicted)) - e_1).reshape(-1, 1) * predicted
+    grad = np.zeros(outputVectors.shape)
+    for i in xrange(len(indices)):
+        grad[indices[i]] = grad_calc[i]
     
     ## -(1-s(u_o^T * v_c)) * u_o^T + sum_K[(1-s(-u_k^T * v_c)) * u_k^T]
     gradPred = -1 * (1 - target_pred_dot_sig) * outputVectors[indices[0]] \
