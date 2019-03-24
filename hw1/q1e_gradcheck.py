@@ -19,7 +19,10 @@ def gradcheck_naive(f, x):
     random.setstate(rndstate)
     fx, grad = f(x) # Evaluate function value at original point
     h = 1e-4        # Do not change this!
-
+    # random.setstate(rndstate)
+    # up_err = f(x + h)[0]
+    # random.setstate(rndstate)
+    # bottom_err = f(x - h)[0]
     # Iterate over all indexes ix in x to check the gradient.
     it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
     while not it.finished:
@@ -36,10 +39,16 @@ def gradcheck_naive(f, x):
         # Make sure you call random.setstate(rndstate)
         # before calling f(x) each time. This will make it possible
         # to test cost functions with built in randomness later.
+        o_xix = x[ix] # save the original value of x[ix]
+        x[ix] = o_xix + h
         random.setstate(rndstate)
-        up_err = f(x[ix] + h)[0]
+        up_err = f(x)[0]
+        x[ix] = o_xix - h
         random.setstate(rndstate)
-        bottom_err = f(x[ix] - h)[0]
+        bottom_err = f(x)[0]
+        
+        x[ix] = o_xix
+        
         numgrad = (up_err - bottom_err) / (2 * h)
 
         # Compare gradients
@@ -79,7 +88,7 @@ def your_sanity_checks():
     print "Running your sanity checks..."
     from q1d_sigmoid import sigmoid, sigmoid_grad
     sig_f = lambda x: (sigmoid(x), sigmoid_grad(sigmoid(x)))
-    gradcheck_naive(sig_f, np.array(1))
+    gradcheck_naive(sig_f, np.random.randn(1))
     gradcheck_naive(sig_f, np.random.randn(3, ))  # 1-D test
     gradcheck_naive(sig_f, np.random.randn(4, 5))  # 2-D test
     
