@@ -18,6 +18,9 @@ def knn(vector, matrix, k=10):
     nearest_idx = []
 
     ### YOUR CODE
+    # cos(u,v) = (u dot v) / (norm2(u) * norm2(v))
+    cos_vector = np.dot(matrix, vector) / (np.linalg.norm(matrix,ord=2,axis=1)*np.linalg.norm(vector,ord=2))
+    nearest_idx = cos_vector.argpartition(-k)[-k:]
     ### END YOUR CODE
     return nearest_idx
 
