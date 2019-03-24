@@ -53,10 +53,16 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     assignment!
     """
 
-    predicted_softmaxed = softmax(predicted)
-    cost =  np.log(predicted_softmaxed[target]) #CE is log of predict probebilty according to 1-hot vector
-    gradPred = np.dot(outputVectors.transpose(), (predicted_softmaxed - predicted))# U[y^hat - y]
-    grad = np.dot((softmax(outputVectors)- outputVectors),predicted)# (y_w^hat - y_w)v_c
+    y_hat = softmax(np.dot(outputVectors,predicted))
+    y = np.zeros(outputVectors.shape[0])
+    y[target] = 1
+
+    cost =  np.log(y_hat[target]) #CE is log of predict probebilty according to 1-hot vector
+    gradPred = np.dot(outputVectors.transpose(), (y_hat - y))# U[y^hat - y]
+    print y_hat.shape
+
+    temp = y_hat - np.eye(y_hat.shape[0])
+    grad = np.dot(temp,predicted)# (y_w^hat - y_w)v_c
 
     return cost, gradPred, grad
 
@@ -152,9 +158,15 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     gradIn = np.zeros(inputVectors.shape)
     gradOut = np.zeros(outputVectors.shape)
 
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+    centerWordIndex = tokens[currentWord]
+    v_c = inputVectors[centerWordIndex]
+
+    for contextCurrentWord in contextWords:
+        u_o_index = tokens[contextCurrentWord]
+        currentCost, currentGradIn, currentGradOut = word2vecCostAndGradient(v_c, u_o_index, outputVectors, dataset)
+        cost += currentCost
+        gradIn[centerWordIndex] += currentGradIn
+        gradOut += currentGradOut
 
     return cost, gradIn, gradOut
 
