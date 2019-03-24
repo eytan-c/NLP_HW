@@ -117,12 +117,19 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     cost = - log_part - sum_part
     
     ## (s(U*v_c) -[1,00]) * v_c
-    e_1 = np.zeros(len(indices))
-    e_1[0] = 1
-    grad_calc = (sigmoid(np.dot(outputVectors[indices], predicted)) - e_1).reshape(-1, 1) * predicted
-    grad = np.zeros(outputVectors.shape)
-    for i in xrange(len(indices)):
-        grad[indices[i]] = grad_calc[i]
+    # e_1 = np.zeros(len(indices))
+    # e_1[target] = 1
+    # grad_calc = (sigmoid(np.dot(outputVectors[indices], predicted)) - e_1).reshape(-1, 1) * predicted
+    # grad = np.zeros_like(outputVectors)
+    # grad[target] = (sigmoid(outputVectors[]))
+    # for i in xrange(len(indices)):
+    #     grad[indices[i]] = grad_calc[i].copy()
+    probs = outputVectors.dot(predicted)
+    grad = np.zeros_like(outputVectors)
+    grad[target] = (sigmoid(probs[target]) - 1) * predicted
+
+    for k in indices[1:]:
+      grad[k] += (1.0 - sigmoid(-np.dot(outputVectors[k], predicted))) * predicted
     
     ## -(1-s(u_o^T * v_c)) * u_o^T + sum_K[(1-s(-u_k^T * v_c)) * u_k^T]
     gradPred = -1 * (1 - target_pred_dot_sig) * outputVectors[indices[0]] \
@@ -222,16 +229,16 @@ def test_word2vec():
     dummy_vectors = normalizeRows(np.random.randn(10,3))
     dummy_tokens = dict([("a",0), ("b",1), ("c",2),("d",3),("e",4)])
     print "==== Gradient check for skip-gram ===="
-    gradcheck_naive(lambda vec: word2vec_sgd_wrapper(
-        skipgram, dummy_tokens, vec, dataset, 5, softmaxCostAndGradient),
-        dummy_vectors)
+    # gradcheck_naive(lambda vec: word2vec_sgd_wrapper(
+    #     skipgram, dummy_tokens, vec, dataset, 5, softmaxCostAndGradient),
+    #     dummy_vectors)
     gradcheck_naive(lambda vec: word2vec_sgd_wrapper(
         skipgram, dummy_tokens, vec, dataset, 5, negSamplingCostAndGradient),
         dummy_vectors)
 
     print "\n=== Results ==="
-    print skipgram("c", 3, ["a", "b", "e", "d", "b", "c"],
-        dummy_tokens, dummy_vectors[:5,:], dummy_vectors[5:,:], dataset)
+    # print skipgram("c", 3, ["a", "b", "e", "d", "b", "c"],
+    #     dummy_tokens, dummy_vectors[:5,:], dummy_vectors[5:,:], dataset)
     print skipgram("c", 1, ["a", "b"],
         dummy_tokens, dummy_vectors[:5,:], dummy_vectors[5:,:], dataset,
         negSamplingCostAndGradient)
