@@ -61,9 +61,9 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     gradPred = np.dot(outputVectors.transpose(), (y_hat - y))# U[y^hat - y]
 
     temp = y_hat - y
-    grad = np.multiply(np.expand_dims(temp,1),predicted)# (y_w^hat - y_w)v_c
+	grad = np.multiply(np.expand_dims(temp, 1),predicted)  # (y_w^hat - y_w)v_c
 
-    return cost, gradPred, grad
+	return cost, gradPred, grad
 
 
 def getNegativeSamples(target, dataset, K):
