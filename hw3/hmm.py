@@ -20,25 +20,21 @@ def hmm_train(sents):
                 tri = ('*','*',token[1])
                 bi = ('*', token[1])
             elif i == 1: # second word of sentence
-                tri = ('*',token[1], sent[i+1][1])
-                bi = (token[1], sent[i+1][1])
-            elif i == len(sent) - 2: # Before last word in the sentence
-                tri = (token[1], sent[i+1][1], 'STOP')
-                bi = (token[1], sent[i+1][1])
-            elif i == len(sent) - 1: # The last word in the sentence
-                tri = None
-                bi = (token[1], 'STOP')
+                tri = ('*', sent[i-1][1], token[1])
+                bi = (sent[i-1][1], token[1])
             else:
-                tri = (token[1], sent[i+1][1], sent[i+2][1])
-                bi = (token[1], sent[i+1][1])
+                tri = (sent[i-2][1], sent[i-1][1], token[1])
+                bi = (sent[i-1][1], token[1])
             
-            if tri is not None:
-                q_tri_counts[tri] = q_tri_counts.get(tri, 0) + 1
-            
+            q_tri_counts[tri] = q_tri_counts.get(tri, 0) + 1
             q_bi_counts[bi] = q_bi_counts.get(bi, 0) + 1
             q_uni_counts[uni] = q_uni_counts.get(uni, 0) + 1
             
             e_word_tag_counts[token] = e_word_tag_counts.get(token, 0) + 1
+        tri_stop = (sent[len(sent)-2][1], sent[len(sent)-1][1], 'STOP')
+        bi_stop = (sent[len(sent)-1][1], 'STOP')
+        q_tri_counts[tri_stop] = q_tri_counts.get(tri_stop, 0) + 1
+        q_bi_counts[bi_stop] = q_bi_counts.get(bi_stop, 0) + 1
         
     ### END YOUR CODE
     return total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e_word_tag_counts, e_tag_counts
