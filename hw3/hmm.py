@@ -10,11 +10,38 @@ def hmm_train(sents):
 
     print "Start training"
     total_tokens = 0
-    q_tri_counts, q_bi_counts, q_uni_counts, e_word_tag_counts,e_tag_counts = {}, {}, {}, {}, {}
+    q_tri_counts, q_bi_counts, q_uni_counts, e_word_tag_counts, e_tag_counts = {}, {}, {}, {}, {}
     ### YOUR CODE HERE
-    raise NotImplementedError
+    for sent in sents:
+        for i, token in enumerate(sent):
+            total_tokens += 1
+            uni = token[1]
+            if i == 0: # First word of sentence
+                tri = ('*','*',token[1])
+                bi = ('*', token[1])
+            elif i == 1: # second word of sentence
+                tri = ('*',token[1], sent[i+1][1])
+                bi = (token[1], sent[i+1][1])
+            elif i == len(sent) - 2: # Before last word in the sentence
+                tri = (token[1], sent[i+1][1], 'STOP')
+                bi = (token[1], sent[i+1][1])
+            elif i == len(sent) - 1: # The last word in the sentence
+                tri = None
+                bi = (token[1], 'STOP')
+            else:
+                tri = (token[1], sent[i+1][1], sent[i+2][1])
+                bi = (token[1], sent[i+1][1])
+            
+            if tri is not None:
+                q_tri_counts[tri] = q_tri_counts.get(tri, 0) + 1
+            
+            q_bi_counts[bi] = q_bi_counts.get(bi, 0) + 1
+            q_uni_counts[uni] = q_uni_counts.get(uni, 0) + 1
+            
+            e_word_tag_counts[token] = e_word_tag_counts.get(token, 0) + 1
+        
     ### END YOUR CODE
-    return total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e_word_tag_counts,e_tag_counts
+    return total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e_word_tag_counts, e_tag_counts
 
 def hmm_viterbi(sent, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e_word_tag_counts,e_tag_counts, lambda1, lambda2):
     """
