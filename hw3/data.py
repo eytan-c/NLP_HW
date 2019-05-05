@@ -1,5 +1,7 @@
 import os
-MIN_FREQ = 3
+MIN_FREQ = 4
+import re
+
 def invert_dict(d):
     res = {}
     for k, v in d.iteritems():
@@ -49,8 +51,40 @@ def replace_word(word):
     """
         Replaces rare words with categories (numbers, dates, etc...)
     """
+    categories = ['twoDigitNum','fourDigitNum','containsDigitAndAlpha',
+                  'containsDigitAndDash','containsDigitAndSlash',
+                  'containsDigitAndComma','containsDigitAndPeriod',
+                  'otherNum','allCaps','capPeriod','firstWord',
+                  'initCap','lowerCase','other']
     ### YOUR CODE HERE
-    raise NotImplementedError
+    if re.match(r"^\d{2}$", word):
+        return 'twoDigitNum'
+    elif re.match(r"^\d{4}$", word):
+        return 'fourDigitNum'
+    elif re.match(r"\d", word) and re.match(r"[A-Za-z]", word):
+        return 'containsDigitAndAlpha'
+    elif re.match(r"\d", word) and re.match(r"-", word):
+        return 'containsDigitAndDash'
+    elif re.match(r"\d", word) and re.match(r"[\\/]", word):
+        return 'containsDigitAndSlash'
+    elif re.match(r"\d", word) and re.match(r",", word):
+        return 'containsDigitAndComma'
+    elif re.match(r"\d", word) and re.match(r"\.", word):
+        return 'containsDigitAndPeriod'
+    elif re.match(r"^\d+$", word):
+        return 'otherNum'
+    elif re.match(r"^[A-Z]+$", word):
+        return 'allCaps'
+    elif re.match(r"^[A-Z]\.$", word):
+        return 'capPeriod'
+    elif re.match(r"^[A-Z][a-z]+\.$", word):
+        return 'abbreviation'
+    elif re.match(r"^[A-Z][a-z]+$", word):
+        return 'initCap'
+    elif word.lower() == word:
+        return 'lowerCase'
+    elif re.match(r"^[?!@#$%^&*()\[\]{}\-+=;:'\"/\\,.~`]$", word):
+        return 'punctuation'
     ### END YOUR CODE
     return "UNK"
 
@@ -70,6 +104,8 @@ def preprocess_sent(vocab, sents):
                 replaced += 1
             total += 1
         res.append(new_sent)
+    print "num replaced: " + str(replaced)
+    print "total: " + str(total)
     print "replaced: " + str(float(replaced)/total)
     return res
 
