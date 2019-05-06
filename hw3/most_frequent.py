@@ -9,13 +9,12 @@ def most_frequent_train(train_data):
     '''
     I decided to use a helper function since I thought we'd need to do it twice
     both in train and in eval - but then I was wrong, and I didn't change it back
+    (itay) I changed it back because in the assigment itself it's written in bold
+    "Avoid any code updates, besides in sections marked by YOUR CODE HERE"
+    and it's the best not to mess with them
     '''
-    return get_frequent_tag(train_data)
-    ### END YOUR CODE
-
-def get_frequent_tag(data):
     freq_dict = {}
-    for sent in data:
+    for sent in train_data:
         for token in sent:
             if token[0] in freq_dict:
                 freq_dict[token[0]][token[1]] = freq_dict[token[0]].get(token[1], 0) + 1
@@ -26,6 +25,7 @@ def get_frequent_tag(data):
         max_tag = max(tags, key=tags.get)
         ret[word] = max_tag
     return ret
+    ### END YOUR CODE
 
 def most_frequent_eval(test_set, pred_tags):
     """
@@ -41,11 +41,20 @@ def most_frequent_eval(test_set, pred_tags):
     # return float(acc) / len(test_preds)
     acc = 0
     total = 0
+
+    all_taggers = list(pred_tags.values())
+    most_frequent = max(set(all_taggers), key=all_taggers.count)
+
     for sent in test_set:
         for token in sent:
-            total += 1
-            if pred_tags.get(token[0]) == token[1]:
-                acc +=1
+            # (Itay:) I think what what I commeted out calculated general acc, not acc of only the most frequent tagger.
+            #total += 1
+            #if pred_tags.get(token[0]) == token[1]:
+            #    acc +=1
+            if token[1] == most_frequent:
+                total += 1
+                if pred_tags.get(token[0]) == token[1]:
+                    acc +=1
     print "Total words: %s" % total
     print "Accuracy count: %s" % acc
     return float(acc) / total
