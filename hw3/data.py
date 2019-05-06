@@ -51,12 +51,18 @@ def replace_word(word):
     """
         Replaces rare words with categories (numbers, dates, etc...)
     """
-    categories = ['twoDigitNum','fourDigitNum','containsDigitAndAlpha',
-                  'containsDigitAndDash','containsDigitAndSlash',
-                  'containsDigitAndComma','containsDigitAndPeriod',
-                  'otherNum','allCaps','capPeriod','firstWord',
-                  'initCap','lowerCase','other']
+    # categories = ['twoDigitNum','fourDigitNum','containsDigitAndAlpha',
+    #               'containsDigitAndDash','containsDigitAndSlash',
+    #               'containsDigitAndComma','containsDigitAndPeriod',
+    #               'otherNum','allCaps','capPeriod','firstWord',
+    #               'initCap','lowerCase','other']
     ### YOUR CODE HERE
+    '''
+    I decided to use regular expressions because it is simpler to read and think about.
+    I tried to make the regexes as simple as possible to match (using the ^ and $ anchors)
+    so that it will also be effective.
+    The only thing I wasn't able to think of how to do - is the 'firstWord' tag.
+    '''
     if re.match(r"^\d{2}$", word):
         return 'twoDigitNum'
     elif re.match(r"^\d{4}$", word):

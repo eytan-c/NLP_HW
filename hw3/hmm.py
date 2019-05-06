@@ -11,6 +11,11 @@ def hmm_train(sents):
     print "Start training"
     total_tokens = 0
     q_tri_counts, q_bi_counts, q_uni_counts, e_word_tag_counts, e_tag_counts = {}, {}, {}, {}, {}
+    '''
+    used the enumerate(sent) to deal with the cases of first word and second word
+    Not sure that the difference between q_uni_counts and e_tag_counts needs to be
+    I decided to use the dict.get(key, 0) to check if a key is in the dict and get value if true, and if not return 0
+    '''
     ### YOUR CODE HERE
     for sent in sents:
         for i, token in enumerate(sent):
@@ -31,6 +36,8 @@ def hmm_train(sents):
             q_uni_counts[uni] = q_uni_counts.get(uni, 0) + 1
             
             e_word_tag_counts[token] = e_word_tag_counts.get(token, 0) + 1
+        
+        ### Get last bi and tri gram counts
         tri_stop = (sent[len(sent)-2][1], sent[len(sent)-1][1], 'STOP')
         bi_stop = (sent[len(sent)-1][1], 'STOP')
         q_tri_counts[tri_stop] = q_tri_counts.get(tri_stop, 0) + 1

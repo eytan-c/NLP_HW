@@ -6,6 +6,10 @@ def most_frequent_train(train_data):
     Returns a dictionary that maps every word in the training set to its most frequent tag.
     """
     ### YOUR CODE HERE
+    '''
+    I decided to use a helper function since I thought we'd need to do it twice
+    both in train and in eval - but then I was wrong, and I didn't change it back
+    '''
     return get_frequent_tag(train_data)
     ### END YOUR CODE
 
@@ -51,10 +55,12 @@ if __name__ == "__main__":
     train_sents = read_conll_pos_file("Penn_Treebank/train.gold.conll")
     dev_sents = read_conll_pos_file("Penn_Treebank/dev.gold.conll")
     vocab = compute_vocab_count(train_sents)
+    #### Debugging prints
     count = 0
     for word, freq in vocab.items():
         if freq < MIN_FREQ : count += 1
     print("Number of words with count < MIN_FREQ:", count)
+    ### END Debugging Prints
     train_sents = preprocess_sent(vocab, train_sents)
     dev_sents = preprocess_sent(vocab, dev_sents)
 
