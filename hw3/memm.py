@@ -26,7 +26,23 @@ def extract_features_base(curr_word, next_word, prev_word, prevprev_word, prev_t
     features = {}
     features['word'] = curr_word
     ### YOUR CODE HERE
-    raise NotImplementedError
+    features['prev_tag'] = prev_tag
+    features['prevprev_tag'] = prevprev_tag
+    features['prev_tag_bigram'] = (prev_tag, prevprev_tag)
+    features['prev_word'] = prev_word
+    features['prevprev_word'] = prevprev_word
+    features['next_word'] = next_word
+    features['prev_word-tag'] = (prev_word, prev_tag)
+    features['prevprev_word-tag'] = (prevprev_word, prevprev_tag)
+    features['initCap'] = 1 if re.match(r"^[A-Z]", curr_word) else 0
+    features['hasNumeric'] = 1 if re.search(r"\d", curr_word) else 0
+    features['hasDash'] = 1 if re.search(r"-", curr_word) else 0
+    features['allCaps'] = 1 if re.search(r"^[A-Z]+$", curr_word) else 0
+    #### suffixes + prefixes
+    if len(curr_word) > 5:
+        for i in xrange(4):
+            features['prefix' + str(i + 1)] = curr_word[:i + 1]
+            features['suffix' + str(i + 1)] = curr_word[- (i + 1):]
     ### END YOUR CODE
     return features
 
@@ -69,6 +85,11 @@ def memm_greedy(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments):
         Returns: predicted tags for the sentence
     """
     predicted_tags = [""] * (len(sent))
+    """
+    logreg - class sklearn.linear_model.LinearRegression
+    vec - class sklearn.feature_extraction.DictVectorizer
+    
+    """
     ### YOUR CODE HERE
     raise NotImplementedError
     ### END YOUR CODE
