@@ -3,6 +3,7 @@ from sklearn.feature_extraction import DictVectorizer
 from sklearn import linear_model
 import time
 import numpy as np
+import pickle
 
 
 def build_extra_decoding_arguments(train_sents):
@@ -163,50 +164,67 @@ def build_tag_to_idx_dict(train_sentences):
 
 
 if __name__ == "__main__":
-    full_flow_start = time.time()
-    train_sents = read_conll_pos_file("Penn_Treebank/train.gold.conll")
-    dev_sents = read_conll_pos_file("Penn_Treebank/dev.gold.conll")
-
-    vocab = compute_vocab_count(train_sents)
-    train_sents = preprocess_sent(vocab, train_sents)
-    extra_decoding_arguments = build_extra_decoding_arguments(train_sents)
-    dev_sents = preprocess_sent(vocab, dev_sents)
-    tag_to_idx_dict = build_tag_to_idx_dict(train_sents)
-    index_to_tag_dict = invert_dict(tag_to_idx_dict)
-
-    vec = DictVectorizer()
-    print "Create train examples"
-    train_examples, train_labels = create_examples(train_sents, tag_to_idx_dict)
-
-
-    num_train_examples = len(train_examples)
-    print "#example: " + str(num_train_examples)
-    print "Done"
-
-    print "Create dev examples"
-    dev_examples, dev_labels = create_examples(dev_sents, tag_to_idx_dict)
-    num_dev_examples = len(dev_examples)
-    print "#example: " + str(num_dev_examples)
-    print "Done"
-
-    all_examples = train_examples
-    all_examples.extend(dev_examples)
-
-    print "Vectorize examples"
-    all_examples_vectorized = vec.fit_transform(all_examples)
-    train_examples_vectorized = all_examples_vectorized[:num_train_examples]
-    dev_examples_vectorized = all_examples_vectorized[num_train_examples:]
-    print "Done"
-
-    logreg = linear_model.LogisticRegression(
-        multi_class='multinomial', max_iter=128, solver='lbfgs', C=100000, verbose=1)
-    print "Fitting..."
-    start = time.time()
-    logreg.fit(train_examples_vectorized, train_labels)
-    end = time.time()
-    print "End training, elapsed " + str(end - start) + " seconds"
-    # End of log linear model training
-
+    #### For faster debugging - saved all the non Q4 objects in pickle###
+    if os.path.exists("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\initial_objs.pkl"):
+        full_flow_start = time.time()
+        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\initial_objs.pkl", 'rb') as f:
+            train_sents, dev_sents, vocab, extra_decoding_arguments, tag_to_idx_dict, index_to_tag_dict = pickle.load(f)
+        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\data_objs.pkl", 'rb') as f:
+            train_examples, train_labels, dev_examples, dev_labels, all_examples_vectorized, train_examples_vectorized, dev_examples_vectorized = pickle.load(f)
+        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model.pkl", 'rb') as f:
+            logreg, vec = pickle.load(f)
+    else:
+        full_flow_start = time.time()
+        train_sents = read_conll_pos_file("Penn_Treebank/train.gold.conll")
+        dev_sents = read_conll_pos_file("Penn_Treebank/dev.gold.conll")
+    
+        vocab = compute_vocab_count(train_sents)
+        train_sents = preprocess_sent(vocab, train_sents)
+        extra_decoding_arguments = build_extra_decoding_arguments(train_sents)
+        dev_sents = preprocess_sent(vocab, dev_sents)
+        tag_to_idx_dict = build_tag_to_idx_dict(train_sents)
+        index_to_tag_dict = invert_dict(tag_to_idx_dict)
+    
+        vec = DictVectorizer()
+        print "Create train examples"
+        train_examples, train_labels = create_examples(train_sents, tag_to_idx_dict)
+    
+    
+        num_train_examples = len(train_examples)
+        print "#example: " + str(num_train_examples)
+        print "Done"
+    
+        print "Create dev examples"
+        dev_examples, dev_labels = create_examples(dev_sents, tag_to_idx_dict)
+        num_dev_examples = len(dev_examples)
+        print "#example: " + str(num_dev_examples)
+        print "Done"
+    
+        all_examples = train_examples
+        all_examples.extend(dev_examples)
+    
+        print "Vectorize examples"
+        all_examples_vectorized = vec.fit_transform(all_examples)
+        train_examples_vectorized = all_examples_vectorized[:num_train_examples]
+        dev_examples_vectorized = all_examples_vectorized[num_train_examples:]
+        print "Done"
+    
+        logreg = linear_model.LogisticRegression(
+            multi_class='multinomial', max_iter=128, solver='lbfgs', C=100000, verbose=1)
+        print "Fitting..."
+        start = time.time()
+        logreg.fit(train_examples_vectorized, train_labels)
+        end = time.time()
+        print "End training, elapsed " + str(end - start) + " seconds"
+        # End of log linear model training
+    
+    with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\initial_objs.pkl", 'wb') as f:
+        pickle.dump([train_sents, dev_sents,vocab,extra_decoding_arguments,tag_to_idx_dict,index_to_tag_dict], f, protocol=-1)
+    with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\data_objs.pkl", 'wb') as f:
+        pickle.dump([train_examples,train_labels,dev_examples,dev_labels,all_examples_vectorized,train_examples_vectorized,dev_examples_vectorized], f, protocol=-1)
+    with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model.pkl", 'wb') as f:
+        pickle.dump([logreg, vec], f, protocol=-1)
+    
     # Evaluation code - do not make any changes
     start = time.time()
     print "Start evaluation on dev set"
