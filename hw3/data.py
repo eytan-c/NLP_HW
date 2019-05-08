@@ -91,6 +91,12 @@ def replace_word(word):
         return 'lowerCase'
     elif re.match(r"^[?!@#$%^&*()\[\]{}\-+=;:'\"/\\,.~`]$", word):
         return 'punctuation'
+    elif re.search(r'(ion\b|ty\b|ics\b|ment\b|ence\b|ance\b|ness\b|ist\b|ism\b)',word):
+        return '_NOUNLIKE_'
+    elif re.search(r'(ate\b|fy\b|ize\b|\ben|\bem)', word):
+        return '_VERBLIKE_'
+    elif re.search(r'(\bun|\bin|ble\b|ry\b|ish\b|ious\b|ical\b|\bnon)',word):
+        return '_ADJLIKE_'
     ### END YOUR CODE
     return "UNK"
 

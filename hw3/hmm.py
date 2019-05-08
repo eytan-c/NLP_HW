@@ -67,9 +67,7 @@ def hmm_viterbi(sent, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e_w
     predicted_tags = [""] * (len(sent))
     ### YOUR CODE HERE
     all_tags = q_uni_counts.keys()
-
-    ############Debugging#####
-    num_of_prob_zero = 0
+    n = len(sent)
 
     def getSet(set_num):
         if set_num > 0:
@@ -115,18 +113,15 @@ def hmm_viterbi(sent, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e_w
         return prob
 
     def get_e(x_k, v):
-        ########### we return prob 0 sometimes. should not happen because of preprocessing
-        #if e_word_tag_counts.get((x_k, v), 0)==0:
-            #print("e_word_tag_counts==0 for: ",x_k,v)
-
-
         return float(e_word_tag_counts.get((x_k, v), 0)) / e_tag_counts[v]
 
     def updatePi(pi, k, u, v):
-        max_pi = -1
-        argmax_pi = ''
+        max_pi = float('-inf')
+        argmax_pi = None
 
         e = get_e(sent[k - 1], v)
+        if e == 0:  # no such tag for this word in training
+            return max_pi, argmax_pi
         for w in getSet(k - 2):
             current = pi[(k - 1, w, u)] * get_q(v, w, u) * e
             if current > max_pi:
@@ -138,8 +133,8 @@ def hmm_viterbi(sent, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e_w
         max_pi = -1
         best_u = ''
         best_v = ''
-        for u in getSet(len(sent) - 2):
-            for v in getSet(len(sent) - 1):
+        for u in getSet(n - 1):
+            for v in getSet(n):
                 current_pi = pi[(len(sent), u, v)] * get_q('STOP', u, v)
                 if current_pi > max_pi:
                     max_pi = current_pi
@@ -147,18 +142,49 @@ def hmm_viterbi(sent, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e_w
                     best_v = v
         return best_u, best_v
 
+    def prunning(i):
+        if sent[i] == 'the' or sent[i] == 'The' \
+                or sent[i] == 'those' or sent[i] == 'Those' or sent[i] == 'a' \
+                or sent[i] == 'an' or sent[i] == 'An' \
+                or sent[i] == 'Another' or sent[i] == 'another' or sent[i] == 'any' \
+                or sent[i] == 'Any':
+            return 'DT'
+        return ''
+
     pi = {(0, '*', '*'): 1}
     bp = {}
 
-    for k in range(1, len(sent)+1):
+    for k in range(1, n + 1):
+        prun = prunning(k-2)  # x_(k-2) is a word with known tag
         for u in getSet(k - 1):
             for v in getSet(k):
-                max_pi, w = updatePi(pi, k, u, v)
+                if prun != '':
+                    #if prun == v:
+                    #    max_pi, w = float('inf'), prun
+                    #else:
+                     #   max_pi, w = float('-inf'), None
+                    #if k == 27:
+                        #print(u,v,w)
+                    # print '################'
+                    # print(max_pi,w)
+                    max_pi, w = updatePi(pi, k, u, v)
+                    #if w!=w1:
+                    #    print(w,w1)
+                    # print(max_pi, w)
+                    # print '################'
+                else:
+                    max_pi, w = updatePi(pi, k, u, v)
+                    # print '!!!!!!!!!!!!!!!!'
+                    # print(max_pi, w)
+                    # print '!!!!!!!!!!!!!!!!!!'
                 pi[(k, u, v)] = max_pi
                 bp[(k, u, v)] = w
-    predicted_tags[len(sent) - 2], predicted_tags[len(sent) - 1] = get_end_tags(pi)
-    for k in range(len(sent) - 2, 1, -1):
-        predicted_tags[k-1] = bp[(k + 2, predicted_tags[k], predicted_tags[k + 1])]
+
+    predicted_tags[n - 2], predicted_tags[n - 1] = get_end_tags(pi)
+    for k in range(n - 2, 0, -1):
+        if predicted_tags[k] is None:
+            print("NonE!")
+        predicted_tags[k - 1] = bp[(k + 2, predicted_tags[k], predicted_tags[k + 1])]
     ### END YOUR CODE
     return predicted_tags
 
@@ -171,14 +197,22 @@ def hmm_eval(test_data, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e
     print "Start evaluation"
     acc_viterbi = 0.0
     ### YOUR CODE HERE
-    lambda1 = 0.5
-    lambda2 = 0.4
+    lambda1 = 0.481
+    lambda2 = 0.394
 
     correct = 0
     total = 0
-    #for sent in test_data:
-    print(len(test_data))
-    for sent in test_data[:100]:
+    for sent in test_data[:20]:
+
+        # for pair in sent:
+        #     if pair[0] == 'the' or pair[0] == 'The' \
+        #             or pair[0] == 'those' or pair[0] == 'Those' or pair[0] == 'a' \
+        #             or pair[0] == 'an' or pair[0] == 'An' \
+        #             or pair[0] == 'Another' or pair[0] == 'another' or pair[0] == 'any' \
+        #             or pair[0] == 'Any':
+        #         if pair[1] != 'DT':
+        #             print(pair)
+
         test_sent = [pair[0] for pair in sent]
         predicted_tags = hmm_viterbi(test_sent, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts,
                                      e_word_tag_counts,

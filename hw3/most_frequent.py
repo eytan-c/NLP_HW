@@ -47,14 +47,14 @@ def most_frequent_eval(test_set, pred_tags):
 
     for sent in test_set:
         for token in sent:
-            # (Itay:) I think what what I commeted out calculated general acc, not acc of only the most frequent tagger.
-            #total += 1
-            #if pred_tags.get(token[0]) == token[1]:
-            #    acc +=1
-            if token[1] == most_frequent:
-                total += 1
-                if pred_tags.get(token[0]) == token[1]:
-                    acc +=1
+            # (Itay:) I think I was wrong last, you were right all along :)
+            total += 1
+            if pred_tags.get(token[0]) == token[1]:
+                acc +=1
+            #if token[1] == most_frequent:
+            #    total += 1
+            #    if pred_tags.get(token[0]) == token[1]:
+             #       acc +=1
     print "Total words: %s" % total
     print "Accuracy count: %s" % acc
     return float(acc) / total
