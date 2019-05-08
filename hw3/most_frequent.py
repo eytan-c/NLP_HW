@@ -47,7 +47,7 @@ def most_frequent_eval(test_set, pred_tags):
 
     for sent in test_set:
         for token in sent:
-            # (Itay:) I think I was wrong last, you were right all along :)
+            # (Itay:) I think I was wrong last time, you were right all along :)
             total += 1
             if pred_tags.get(token[0]) == token[1]:
                 acc +=1

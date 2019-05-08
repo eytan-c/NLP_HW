@@ -1,6 +1,8 @@
 from data import *
 import time
 
+from datetime import datetime
+
 
 def hmm_train(sents):
     """
@@ -66,8 +68,12 @@ def hmm_viterbi(sent, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e_w
     """
     predicted_tags = [""] * (len(sent))
     ### YOUR CODE HERE
+    import math
+
     all_tags = q_uni_counts.keys()
     n = len(sent)
+    prun_count = 0
+    not_prun_count = 0
 
     def getSet(set_num):
         if set_num > 0:
@@ -83,27 +89,20 @@ def hmm_viterbi(sent, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e_w
 
         if model == "unigram":
             if word in q_uni_counts:
-                prob = (q_uni_counts[word] + 0.0) / total_tokens
-            else:
-                #################################
-                print("ERROR, should not be a tag in test that we have not seen!")
-                print(prev_to_prev_word + " " + prev_word + ' ' + word)
-                raise StandardError
-                ###############3
-                # prob = (q_uni_counts[word_to_num['UUUNKKK']] + 0.0) / \
-                #      total_tokens
+                prob = float(q_uni_counts[word]) / total_tokens
+
         if model == "bigram":
             if (prev_word, word) in q_bi_counts:
-                prob = (q_bi_counts[(prev_word, word)] + 0.0) / \
+                prob = float(q_bi_counts[(prev_word, word)]) / \
                        q_uni_counts[prev_word]
             else:
-                prob = 0.0
+                prob = 0
         if model == "trigram":
             if (prev_to_prev_word, prev_word, word) in q_tri_counts:
-                prob = (q_tri_counts[(prev_to_prev_word, prev_word, word)] + 0.0) \
+                prob = float(q_tri_counts[(prev_to_prev_word, prev_word, word)]) \
                        / q_bi_counts[(prev_to_prev_word, prev_word)]
             else:
-                prob = 0.0
+                prob = 0
         return prob
 
     def get_q(v, w, u):
@@ -111,9 +110,18 @@ def hmm_viterbi(sent, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e_w
                lambda2 * calc_prob(v, w, u, "bigram") + \
                (1 - lambda1 - lambda2) * calc_prob(v, w, u, "unigram")
         return prob
+        #if prob == 0:
+        #    return -1000
+        #return math.log(prob)
 
     def get_e(x_k, v):
-        return float(e_word_tag_counts.get((x_k, v), 0)) / e_tag_counts[v]
+        e_x_k_v = e_word_tag_counts.get((x_k, v), 0)
+        if  e_x_k_v == 0:
+            return 0
+            #return -1000
+        else:
+            return float(e_x_k_v) / e_tag_counts[v]
+            #return math.log(float(e_word_tag_counts.get((x_k, v), 0)) / e_tag_counts[v])
 
     def updatePi(pi, k, u, v):
         max_pi = float('-inf')
@@ -121,9 +129,11 @@ def hmm_viterbi(sent, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e_w
 
         e = get_e(sent[k - 1], v)
         if e == 0:  # no such tag for this word in training
-            return max_pi, argmax_pi
+            return max_pi, argmax_pi  # max_pi, argmax_pi
         for w in getSet(k - 2):
-            current = pi[(k - 1, w, u)] * get_q(v, w, u) * e
+            # for w in getSet(k - 2):
+            current = pi.get((k - 1, w, u)) * get_q(v, w, u) * e
+            #current = pi.get((k - 1, w, u),-1000) + get_q(v, w, u) + e
             if current > max_pi:
                 max_pi = current
                 argmax_pi = w
@@ -135,7 +145,8 @@ def hmm_viterbi(sent, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e_w
         best_v = ''
         for u in getSet(n - 1):
             for v in getSet(n):
-                current_pi = pi[(len(sent), u, v)] * get_q('STOP', u, v)
+                current_pi = pi[(n, u, v)] * get_q('STOP', u, v)
+                #current_pi = pi.get((n, u, v),-1000) + get_q('STOP', u, v)
                 if current_pi > max_pi:
                     max_pi = current_pi
                     best_u = u
@@ -143,48 +154,48 @@ def hmm_viterbi(sent, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e_w
         return best_u, best_v
 
     def prunning(i):
-        if sent[i] == 'the' or sent[i] == 'The' \
-                or sent[i] == 'those' or sent[i] == 'Those' or sent[i] == 'a' \
-                or sent[i] == 'an' or sent[i] == 'An' \
-                or sent[i] == 'Another' or sent[i] == 'another' or sent[i] == 'any' \
-                or sent[i] == 'Any':
+        DTs = ['the', 'The', 'those', 'Those', 'a', 'an', 'An', 'Another', 'another', 'any', 'Any']
+        MDs = ['would', 'can', 'may', 'will']
+        VBZs = ['is', 'has', 'does']
+        VBs = ['be']
+
+        if sent[i] == ',':
+            return ','
+        if sent[i] == '.':
+            return '.'
+        if sent[i] in DTs:
             return 'DT'
+        if sent[i] == 'of':
+            return 'IN'
+        if sent[i] in MDs:
+            return 'MD'
+        if sent[i] in VBZs:
+            return 'VBZ'
+        if sent[i] in VBs:
+            return 'VB'
         return ''
 
     pi = {(0, '*', '*'): 1}
     bp = {}
 
     for k in range(1, n + 1):
-        prun = prunning(k-2)  # x_(k-2) is a word with known tag
+        prun = prunning(k - 1)  # x_(k-1) is a word with known tag
         for u in getSet(k - 1):
             for v in getSet(k):
-                if prun != '':
-                    #if prun == v:
-                    #    max_pi, w = float('inf'), prun
-                    #else:
-                     #   max_pi, w = float('-inf'), None
-                    #if k == 27:
-                        #print(u,v,w)
-                    # print '################'
-                    # print(max_pi,w)
-                    max_pi, w = updatePi(pi, k, u, v)
-                    #if w!=w1:
-                    #    print(w,w1)
-                    # print(max_pi, w)
-                    # print '################'
+                # max_pi, w = updatePi(pi, k, u, v)
+                if prun != '' and v != prun:
+                    prun_count += 1
+                    max_pi, w = float('-inf'), None
                 else:
+                    not_prun_count += 1
                     max_pi, w = updatePi(pi, k, u, v)
-                    # print '!!!!!!!!!!!!!!!!'
-                    # print(max_pi, w)
-                    # print '!!!!!!!!!!!!!!!!!!'
                 pi[(k, u, v)] = max_pi
                 bp[(k, u, v)] = w
 
     predicted_tags[n - 2], predicted_tags[n - 1] = get_end_tags(pi)
     for k in range(n - 2, 0, -1):
-        if predicted_tags[k] is None:
-            print("NonE!")
         predicted_tags[k - 1] = bp[(k + 2, predicted_tags[k], predicted_tags[k + 1])]
+    #print("prun percent:", float(prun_count) / (prun_count + not_prun_count))
     ### END YOUR CODE
     return predicted_tags
 
@@ -202,17 +213,19 @@ def hmm_eval(test_data, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e
 
     correct = 0
     total = 0
-    for sent in test_data[:20]:
 
-        # for pair in sent:
-        #     if pair[0] == 'the' or pair[0] == 'The' \
-        #             or pair[0] == 'those' or pair[0] == 'Those' or pair[0] == 'a' \
-        #             or pair[0] == 'an' or pair[0] == 'An' \
-        #             or pair[0] == 'Another' or pair[0] == 'another' or pair[0] == 'any' \
-        #             or pair[0] == 'Any':
-        #         if pair[1] != 'DT':
-        #             print(pair)
+    # (code to find words for pruning)
+    # all_pairs = []
+    # for sent in test_data:
+    #     for pair in sent:
+    #         if pair[0]!=',' and pair[0]!='the' and pair[0]!='.':
+    #             all_pairs.append(pair)
+    #         if pair[0]=='of' and pair[1]!='IN':
+    #             print("Not good")
+    # most_frequent = max(set(all_pairs), key=all_pairs.count)
+    # print(most_frequent)
 
+    for sent in test_data[:100]:
         test_sent = [pair[0] for pair in sent]
         predicted_tags = hmm_viterbi(test_sent, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts,
                                      e_word_tag_counts,
