@@ -28,12 +28,12 @@ def extract_features_base(curr_word, next_word, prev_word, prevprev_word, prev_t
     ### YOUR CODE HERE
     features['prev_tag'] = prev_tag
     features['prevprev_tag'] = prevprev_tag
-    features['prev_tag_bigram'] = (prev_tag, prevprev_tag)
+    features['prev_tag_bigram'] = prev_tag + ' ' + prevprev_tag
     features['prev_word'] = prev_word
     features['prevprev_word'] = prevprev_word
     features['next_word'] = next_word
-    features['prev_word-tag'] = (prev_word, prev_tag)
-    features['prevprev_word-tag'] = (prevprev_word, prevprev_tag)
+    # features['prev_word-tag'] = (prev_word, prev_tag)
+    # features['prevprev_word-tag'] = (prevprev_word, prevprev_tag)
     features['initCap'] = 1 if re.match(r"^[A-Z]", curr_word) else 0
     features['hasNumeric'] = 1 if re.search(r"\d", curr_word) else 0
     features['hasDash'] = 1 if re.search(r"-", curr_word) else 0
@@ -88,10 +88,14 @@ def memm_greedy(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments):
     """
     logreg - class sklearn.linear_model.LinearRegression
     vec - class sklearn.feature_extraction.DictVectorizer
-    
+    index_to_tag_dict - class dictionary from number to
+    extra_decoding_arguments
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    for j, word in enumerate(sent):
+        tag = logreg.predict(word)
+        predicted_tags[j] = index_to_tag_dict[tag]
+        
     ### END YOUR CODE
     return predicted_tags
 
@@ -129,6 +133,7 @@ def memm_eval(test_data, logreg, vec, index_to_tag_dict, extra_decoding_argument
     for i, sen in enumerate(test_data):
         ### YOUR CODE HERE
         ### Make sure to update Viterbi and greedy accuracy
+        greedy_tags = memm_greedy(sen, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
         ### END YOUR CODE
 
         if should_log(i):
