@@ -94,8 +94,11 @@ def memm_greedy(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments):
     """
     ### YOUR CODE HERE
     for j, word in enumerate(sent):
-        tag = logreg.predict(word)
-        predicted_tags[j] = index_to_tag_dict[tag]
+        features = extract_features(sent, j)
+        word_vec = vec.transform(features)
+        tag = logreg.predict(word_vec)
+        prob = logreg.predict_proba(word_vec)
+        predicted_tags[j] = index_to_tag_dict[tag[0]]  # tag is ndarray
         
     ### END YOUR CODE
     return predicted_tags
@@ -134,6 +137,8 @@ def memm_eval(test_data, logreg, vec, index_to_tag_dict, extra_decoding_argument
     for i, sen in enumerate(test_data):
         ### YOUR CODE HERE
         ### Make sure to update Viterbi and greedy accuracy
+        # sen_features = [extract_features(sen, i) for i in xrange(len(sen))]
+        # sen_vec = vec.transform(sen_features)
         greedy_tags = memm_greedy(sen, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
         ### END YOUR CODE
 
@@ -165,14 +170,26 @@ def build_tag_to_idx_dict(train_sentences):
 
 if __name__ == "__main__":
     #### For faster debugging - saved all the non Q4 objects in pickle###
-    if os.path.exists("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\initial_objs.pkl"):
+    if os.path.exists("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\initial_objs1234.pkl"):
         full_flow_start = time.time()
+        print "Opening initial_objs.pkl...."
+        start = time.time()
         with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\initial_objs.pkl", 'rb') as f:
             train_sents, dev_sents, vocab, extra_decoding_arguments, tag_to_idx_dict, index_to_tag_dict = pickle.load(f)
+        end = time.time()
+        print "Opening took %s" % (start - end)
+        print "Opening data_objs.pkl...."
+        start = time.time()
         with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\data_objs.pkl", 'rb') as f:
             train_examples, train_labels, dev_examples, dev_labels, all_examples_vectorized, train_examples_vectorized, dev_examples_vectorized = pickle.load(f)
+        end = time.time()
+        print "Opening took %s" % (start - end)
+        start = time.time()
+        print "Opening model.pkl...."
         with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model.pkl", 'rb') as f:
             logreg, vec = pickle.load(f)
+        end = time.time()
+        print "Opening took %s" % (start - end)
     else:
         full_flow_start = time.time()
         train_sents = read_conll_pos_file("Penn_Treebank/train.gold.conll")
@@ -208,7 +225,8 @@ if __name__ == "__main__":
         train_examples_vectorized = all_examples_vectorized[:num_train_examples]
         dev_examples_vectorized = all_examples_vectorized[num_train_examples:]
         print "Done"
-    
+        end_make_vars = time.time()
+        print "Making var took %s" % (full_flow_start - end_make_vars)
         logreg = linear_model.LogisticRegression(
             multi_class='multinomial', max_iter=128, solver='lbfgs', C=100000, verbose=1)
         print "Fitting..."
@@ -218,12 +236,12 @@ if __name__ == "__main__":
         print "End training, elapsed " + str(end - start) + " seconds"
         # End of log linear model training
     
-    with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\initial_objs.pkl", 'wb') as f:
-        pickle.dump([train_sents, dev_sents,vocab,extra_decoding_arguments,tag_to_idx_dict,index_to_tag_dict], f, protocol=-1)
-    with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\data_objs.pkl", 'wb') as f:
-        pickle.dump([train_examples,train_labels,dev_examples,dev_labels,all_examples_vectorized,train_examples_vectorized,dev_examples_vectorized], f, protocol=-1)
-    with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model.pkl", 'wb') as f:
-        pickle.dump([logreg, vec], f, protocol=-1)
+        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\initial_objs.pkl", 'wb') as f:
+            pickle.dump([train_sents, dev_sents,vocab,extra_decoding_arguments,tag_to_idx_dict,index_to_tag_dict], f, protocol=-1)
+        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\data_objs.pkl", 'wb') as f:
+            pickle.dump([train_examples,train_labels,dev_examples,dev_labels,all_examples_vectorized,train_examples_vectorized,dev_examples_vectorized], f, protocol=-1)
+        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model.pkl", 'wb') as f:
+            pickle.dump([logreg, vec], f, protocol=-1)
     
     # Evaluation code - do not make any changes
     start = time.time()
