@@ -189,6 +189,7 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
                 if q is None:
                     features = extract_features_base(curr_token, next_token, u[0], t[0], u[1], t[1])
                     feat_vec = vec.transform(features)
+                    # The next two lines are to fix the mismatch of not seeing '*' label in training
                     probs = logreg.predict_log_proba(feat_vec)[0]
                     _cache[(curr_token, next_token, u[0], t[0], u[1], t[1])] = q = np.append(probs, -np.inf*np.ones(1))
                 log_q[t[2],:] = q
