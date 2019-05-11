@@ -189,16 +189,30 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
                 if q is None:
                     features = extract_features_base(curr_token, next_token, u[0], t[0], u[1], t[1])
                     feat_vec = vec.transform(features)
-                    _cache[(curr_token, next_token, u[0], t[0], u[1], t[1])] = q = logreg.predict_log_proba(feat_vec)[0]
+                    probs = logreg.predict_log_proba(feat_vec)[0]
+                    _cache[(curr_token, next_token, u[0], t[0], u[1], t[1])] = q = np.append(probs, -np.inf*np.ones(1))
                 log_q[t[2],:] = q
             bp_k[u[2], :] = w = np.argmax(pi[-1][:, u[2], None] + log_q, axis=0)
             pi_k[u[2], :] = pi[-1][w, u[2]] + log_q[w, tag_rng]
         pi.append(pi_k)
         bp.append(bp_k)
-            
-        # for u in getSet(k-1):
-            # for v in getSet(k):
-                # pi[(k,u,v)] = max(pi[(k-1,t,u)])
+
+    yn1, yn = np.unravel_index(np.argmax(pi[-1]), pi[-1].shape)
+    predicted_tags[-1] = yn
+
+    if len(sent) == 1:
+        predicted_tags = [index_to_tag_dict[label] for label in predicted_tags]
+        return predicted_tags
+    
+    predicted_tags[-2] = yn1
+    for k in range(len(sent) - 3, -1, -1):
+        tag1 = predicted_tags[k + 1]
+        tag2 = predicted_tags[k + 2]
+        yk = bp[k + 2][tag1, tag2]
+        predicted_tags[k] = yk
+
+    for j, label in enumerate(predicted_tags):
+        predicted_tags[j] = index_to_tag_dict[label]
     ### END YOUR CODE
     return predicted_tags
 
@@ -271,7 +285,14 @@ if __name__ == "__main__":
 
     vocab = compute_vocab_count(train_sents)
     train_sents = preprocess_sent(vocab, train_sents)
-    extra_decoding_arguments = build_extra_decoding_arguments(train_sents)
+    if os.path.exists("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\args.pkl"):
+        print "Opening arg.pkl...."
+        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\args.pkl", 'rb') as f:
+            extra_decoding_arguments = pickle.load(f)
+    else:
+        extra_decoding_arguments = build_extra_decoding_arguments(train_sents)
+        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\args.pkl", 'wb') as f:
+            pickle.dump(extra_decoding_arguments, f, protocol=-1)
     dev_sents = preprocess_sent(vocab, dev_sents)
     tag_to_idx_dict = build_tag_to_idx_dict(train_sents)
     index_to_tag_dict = invert_dict(tag_to_idx_dict)
@@ -308,6 +329,7 @@ if __name__ == "__main__":
         with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model.pkl", 'rb') as f:
             logreg, vec = pickle.load(f)
     else:
+        # t_l_set = set(train_labels)
         logreg = linear_model.LogisticRegression(
             multi_class='multinomial', max_iter=128, solver='lbfgs', C=100000, verbose=1)
         print "Fitting..."
@@ -321,7 +343,7 @@ if __name__ == "__main__":
         #     pickle.dump([train_sents, dev_sents,vocab,extra_decoding_arguments,tag_to_idx_dict,index_to_tag_dict], f, protocol=-1)
         # with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\data_objs.pkl", 'wb') as f:
         #     pickle.dump([train_examples,train_labels,dev_examples,dev_labels,all_examples_vectorized,train_examples_vectorized,dev_examples_vectorized], f, protocol=-1)
-        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model.pkl", 'wb') as f:
+        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model_2.pkl", 'wb') as f:
             pickle.dump([logreg, vec], f, protocol=-1)
     
     
