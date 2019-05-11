@@ -14,6 +14,52 @@ def build_extra_decoding_arguments(train_sents):
 
     extra_decoding_arguments = {}
     ### YOUR CODE HERE
+    total_tokens = 0
+    q_tri_counts, q_bi_counts, q_uni_counts, e_word_tag_counts, e_tag_counts = {}, {}, {}, {}, {}
+    for sent in train_sents:
+        uni = '*'
+        bi = ('*', '*')
+        q_uni_counts[uni] = q_uni_counts.get(uni, 0) + 1
+        q_bi_counts[bi] = q_bi_counts.get(bi, 0) + 1
+        e_tag_counts[uni] = e_tag_counts.get(uni, 0) + 1
+        for i, token in enumerate(sent):
+            total_tokens += 1
+            uni = token[1]
+            if i == 0:  # First word of sentence
+                tri = ('*', '*', token[1])
+                bi = ('*', token[1])
+            elif i == 1:  # second word of sentence
+                tri = ('*', sent[i - 1][1], token[1])
+                bi = (sent[i - 1][1], token[1])
+            else:
+                tri = (sent[i - 2][1], sent[i - 1][1], token[1])
+                bi = (sent[i - 1][1], token[1])
+
+            q_tri_counts[tri] = q_tri_counts.get(tri, 0) + 1
+            q_bi_counts[bi] = q_bi_counts.get(bi, 0) + 1
+            q_uni_counts[uni] = q_uni_counts.get(uni, 0) + 1
+
+            e_word_tag_counts[token] = e_word_tag_counts.get(token, 0) + 1
+            e_tag_counts[uni] = e_tag_counts.get(uni, 0) + 1
+
+        ### Get last bi and tri gram counts
+        q_uni_counts['STOP'] = q_uni_counts.get('STOP', 0) + 1
+        e_tag_counts['STOP'] = e_tag_counts.get('STOP', 0) + 1
+        if len(sent) == 1:
+            tri_stop = ('*', sent[len(sent) - 1][1], 'STOP')
+            bi_stop = (sent[len(sent) - 1][1], 'STOP')
+        else:
+            tri_stop = (sent[len(sent) - 2][1], sent[len(sent) - 1][1], 'STOP')
+            bi_stop = (sent[len(sent) - 1][1], 'STOP')
+        q_tri_counts[tri_stop] = q_tri_counts.get(tri_stop, 0) + 1
+        q_bi_counts[bi_stop] = q_bi_counts.get(bi_stop, 0) + 1
+    
+    extra_decoding_arguments = {"total_tokens": total_tokens,
+                                "q_tri_counts": q_tri_counts,
+                                "q_bi_counts": q_bi_counts,
+                                "q_uni_counts": q_uni_counts,
+                                "e_word_tag_counts": e_word_tag_counts,
+                                "e_tag_counts": e_tag_counts}
     ### END YOUR CODE
 
     return extra_decoding_arguments
@@ -35,10 +81,10 @@ def extract_features_base(curr_word, next_word, prev_word, prevprev_word, prev_t
     features['next_word'] = next_word
     # features['prev_word-tag'] = (prev_word, prev_tag)
     # features['prevprev_word-tag'] = (prevprev_word, prevprev_tag)
-    features['initCap'] = 1 if re.match(r"^[A-Z]", curr_word) else 0
-    features['hasNumeric'] = 1 if re.search(r"\d", curr_word) else 0
-    features['hasDash'] = 1 if re.search(r"-", curr_word) else 0
-    features['allCaps'] = 1 if re.search(r"^[A-Z]+$", curr_word) else 0
+    features['initCap'] = 1 if re.match(r"^[A-Z]", curr_word[0]) else 0
+    features['hasNumeric'] = 1 if re.search(r"\d", curr_word[0]) else 0
+    features['hasDash'] = 1 if re.search(r"-", curr_word[0]) else 0
+    features['allCaps'] = 1 if re.search(r"^[A-Z]+$", curr_word[0]) else 0
     #### suffixes + prefixes
     if len(curr_word) > 5:
         for i in xrange(4):
@@ -96,9 +142,9 @@ def memm_greedy(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments):
     for j, word in enumerate(sent):
         features = extract_features(sent, j)
         word_vec = vec.transform(features)
-        tag = logreg.predict(word_vec)
-        prob = logreg.predict_proba(word_vec)
-        predicted_tags[j] = index_to_tag_dict[tag[0]]  # tag is ndarray
+        tag = int(logreg.predict(word_vec))
+        # prob = logreg.predict_proba(word_vec)
+        predicted_tags[j] = index_to_tag_dict[tag]  # tag is ndarray
         
     ### END YOUR CODE
     return predicted_tags
@@ -110,7 +156,49 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
     """
     predicted_tags = [""] * (len(sent))
     ### YOUR CODE HERE
-    raise NotImplementedError
+    ## working with log probabilities for stability
+    
+    def getSet(word, index, index_to_tag_dict):
+        if index >= 0:
+            S = {(word[0], tag, idx) for idx, tag in index_to_tag_dict.items() \
+                 if extra_decoding_arguments['e_word_tag_counts'].get((word[0], tag),0) > 0}
+        else:
+            S = {('<st>', '*', len(index_to_tag_dict) - 1)}
+        return S
+    
+    tag_rng = np.array(sorted(index_to_tag_dict.keys()))
+    num_tags = len(tag_rng)
+    pi0 = -np.inf * np.ones((num_tags, num_tags))
+    pi0[tag_rng[-1],tag_rng[-1]] = 0  # pi(0,*,*) = log(1)
+    pi = [pi0]
+    bp = []
+    _cache = {}
+    for k in xrange(len(sent)):
+        pi_k = -np.inf * np.ones((num_tags, num_tags))
+        bp_k = np.zeros((num_tags, num_tags), int)
+        curr_token = sent[k]
+        next_token = sent[k + 1] if k < len(sent) - 1 else ('</s>', 'STOP')
+        S_k = getSet(curr_token, k, index_to_tag_dict)
+        S_k_1 = getSet(curr_token, k - 1, index_to_tag_dict)
+        S_k_2 = getSet(curr_token, k - 2, index_to_tag_dict)
+        ## Calculate log-probabilities
+        log_q = np.zeros((num_tags,num_tags))
+        for u in S_k_1:
+            for t in S_k_2:
+                q = _cache.get((curr_token, next_token, u[0], t[0], u[1], t[1]))
+                if q is None:
+                    features = extract_features_base(curr_token, next_token, u[0], t[0], u[1], t[1])
+                    feat_vec = vec.transform(features)
+                    _cache[(curr_token, next_token, u[0], t[0], u[1], t[1])] = q = logreg.predict_log_proba(feat_vec)[0]
+                log_q[t[2],:] = q
+            bp_k[u[2], :] = w = np.argmax(pi[-1][:, u[2], None] + log_q, axis=0)
+            pi_k[u[2], :] = pi[-1][w, u[2]] + log_q[w, tag_rng]
+        pi.append(pi_k)
+        bp.append(bp_k)
+            
+        # for u in getSet(k-1):
+            # for v in getSet(k):
+                # pi[(k,u,v)] = max(pi[(k-1,t,u)])
     ### END YOUR CODE
     return predicted_tags
 
@@ -139,7 +227,15 @@ def memm_eval(test_data, logreg, vec, index_to_tag_dict, extra_decoding_argument
         ### Make sure to update Viterbi and greedy accuracy
         # sen_features = [extract_features(sen, i) for i in xrange(len(sen))]
         # sen_vec = vec.transform(sen_features)
+        total_words_count += len(sen)
         greedy_tags = memm_greedy(sen, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
+        greedy_num = sum([greedy_tags[k] == sen[k][1] for k in xrange(len(sen))])
+        correct_greedy_preds += greedy_num
+        viterbi_tags = memm_viterbi(sen, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
+        viterbi_num = sum([viterbi_tags[k] == sen[k][1] for k in xrange(len(sen))])
+        correct_viterbi_preds += viterbi_num
+        acc_greedy = float(greedy_num) / len(sen)
+        acc_viterbi = float(viterbi_num) / len(sen)
         ### END YOUR CODE
 
         if should_log(i):
@@ -169,64 +265,49 @@ def build_tag_to_idx_dict(train_sentences):
 
 
 if __name__ == "__main__":
+    full_flow_start = time.time()
+    train_sents = read_conll_pos_file("Penn_Treebank/train.gold.conll")
+    dev_sents = read_conll_pos_file("Penn_Treebank/dev.gold.conll")
+
+    vocab = compute_vocab_count(train_sents)
+    train_sents = preprocess_sent(vocab, train_sents)
+    extra_decoding_arguments = build_extra_decoding_arguments(train_sents)
+    dev_sents = preprocess_sent(vocab, dev_sents)
+    tag_to_idx_dict = build_tag_to_idx_dict(train_sents)
+    index_to_tag_dict = invert_dict(tag_to_idx_dict)
+
+    vec = DictVectorizer()
+    print "Create train examples"
+    train_examples, train_labels = create_examples(train_sents, tag_to_idx_dict)
+
+
+    num_train_examples = len(train_examples)
+    print "#example: " + str(num_train_examples)
+    print "Done"
+
+    print "Create dev examples"
+    dev_examples, dev_labels = create_examples(dev_sents, tag_to_idx_dict)
+    num_dev_examples = len(dev_examples)
+    print "#example: " + str(num_dev_examples)
+    print "Done"
+
+    all_examples = train_examples
+    all_examples.extend(dev_examples)
+
+    print "Vectorize examples"
+    all_examples_vectorized = vec.fit_transform(all_examples)
+    train_examples_vectorized = all_examples_vectorized[:num_train_examples]
+    dev_examples_vectorized = all_examples_vectorized[num_train_examples:]
+    print "Done"
+    end_make_vars = time.time()
+    
+    print "Making var took %s" % (full_flow_start - end_make_vars)
     #### For faster debugging - saved all the non Q4 objects in pickle###
-    if os.path.exists("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\initial_objs1234.pkl"):
-        full_flow_start = time.time()
-        print "Opening initial_objs.pkl...."
-        start = time.time()
-        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\initial_objs.pkl", 'rb') as f:
-            train_sents, dev_sents, vocab, extra_decoding_arguments, tag_to_idx_dict, index_to_tag_dict = pickle.load(f)
-        end = time.time()
-        print "Opening took %s" % (start - end)
-        print "Opening data_objs.pkl...."
-        start = time.time()
-        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\data_objs.pkl", 'rb') as f:
-            train_examples, train_labels, dev_examples, dev_labels, all_examples_vectorized, train_examples_vectorized, dev_examples_vectorized = pickle.load(f)
-        end = time.time()
-        print "Opening took %s" % (start - end)
-        start = time.time()
+    if os.path.exists("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model.pkl"):
         print "Opening model.pkl...."
         with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model.pkl", 'rb') as f:
             logreg, vec = pickle.load(f)
-        end = time.time()
-        print "Opening took %s" % (start - end)
     else:
-        full_flow_start = time.time()
-        train_sents = read_conll_pos_file("Penn_Treebank/train.gold.conll")
-        dev_sents = read_conll_pos_file("Penn_Treebank/dev.gold.conll")
-    
-        vocab = compute_vocab_count(train_sents)
-        train_sents = preprocess_sent(vocab, train_sents)
-        extra_decoding_arguments = build_extra_decoding_arguments(train_sents)
-        dev_sents = preprocess_sent(vocab, dev_sents)
-        tag_to_idx_dict = build_tag_to_idx_dict(train_sents)
-        index_to_tag_dict = invert_dict(tag_to_idx_dict)
-    
-        vec = DictVectorizer()
-        print "Create train examples"
-        train_examples, train_labels = create_examples(train_sents, tag_to_idx_dict)
-    
-    
-        num_train_examples = len(train_examples)
-        print "#example: " + str(num_train_examples)
-        print "Done"
-    
-        print "Create dev examples"
-        dev_examples, dev_labels = create_examples(dev_sents, tag_to_idx_dict)
-        num_dev_examples = len(dev_examples)
-        print "#example: " + str(num_dev_examples)
-        print "Done"
-    
-        all_examples = train_examples
-        all_examples.extend(dev_examples)
-    
-        print "Vectorize examples"
-        all_examples_vectorized = vec.fit_transform(all_examples)
-        train_examples_vectorized = all_examples_vectorized[:num_train_examples]
-        dev_examples_vectorized = all_examples_vectorized[num_train_examples:]
-        print "Done"
-        end_make_vars = time.time()
-        print "Making var took %s" % (full_flow_start - end_make_vars)
         logreg = linear_model.LogisticRegression(
             multi_class='multinomial', max_iter=128, solver='lbfgs', C=100000, verbose=1)
         print "Fitting..."
@@ -235,13 +316,14 @@ if __name__ == "__main__":
         end = time.time()
         print "End training, elapsed " + str(end - start) + " seconds"
         # End of log linear model training
-    
-        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\initial_objs.pkl", 'wb') as f:
-            pickle.dump([train_sents, dev_sents,vocab,extra_decoding_arguments,tag_to_idx_dict,index_to_tag_dict], f, protocol=-1)
-        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\data_objs.pkl", 'wb') as f:
-            pickle.dump([train_examples,train_labels,dev_examples,dev_labels,all_examples_vectorized,train_examples_vectorized,dev_examples_vectorized], f, protocol=-1)
+
+        # with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\initial_objs.pkl", 'wb') as f:
+        #     pickle.dump([train_sents, dev_sents,vocab,extra_decoding_arguments,tag_to_idx_dict,index_to_tag_dict], f, protocol=-1)
+        # with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\data_objs.pkl", 'wb') as f:
+        #     pickle.dump([train_examples,train_labels,dev_examples,dev_labels,all_examples_vectorized,train_examples_vectorized,dev_examples_vectorized], f, protocol=-1)
         with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model.pkl", 'wb') as f:
             pickle.dump([logreg, vec], f, protocol=-1)
+    
     
     # Evaluation code - do not make any changes
     start = time.time()
