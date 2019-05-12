@@ -154,67 +154,129 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
         Receives: a sentence to tag and the parameters learned by memm
         Returns: predicted tags for the sentence
     """
+    
+    ###
+    # Reference
+    ###
+
     predicted_tags = [""] * (len(sent))
+
     ### YOUR CODE HERE
-    ## working with log probabilities for stability
-    
-    def getSet(word, index, index_to_tag_dict):
-        if index >= 0:
-            S = {(word[0], tag, idx) for idx, tag in index_to_tag_dict.items() \
-                 if extra_decoding_arguments['e_word_tag_counts'].get((word[0], tag),0) > 0}
-        else:
-            S = {('<st>', '*', len(index_to_tag_dict) - 1)}
-        return S
-    
-    tag_rng = np.array(sorted(index_to_tag_dict.keys()))
-    num_tags = len(tag_rng)
+    e_word_tag_counts = extra_decoding_arguments['e_word_tag_counts']
+    tagset = tag_to_idx_dict
+    _cache = {}
+    num_tags = len(tagset)
+    rng = np.arange(num_tags)
     pi0 = -np.inf * np.ones((num_tags, num_tags))
-    pi0[tag_rng[-1],tag_rng[-1]] = 0  # pi(0,*,*) = log(1)
+    pi0[tagset['*'], tagset['*']] = 0
     pi = [pi0]
     bp = []
-    _cache = {}
-    for k in xrange(len(sent)):
+    for k, x_k in enumerate(sent):
         pi_k = -np.inf * np.ones((num_tags, num_tags))
         bp_k = np.zeros((num_tags, num_tags), int)
-        curr_token = sent[k]
-        next_token = sent[k + 1] if k < len(sent) - 1 else ('</s>', 'STOP')
-        S_k = getSet(curr_token, k, index_to_tag_dict)
-        S_k_1 = getSet(curr_token, k - 1, index_to_tag_dict)
-        S_k_2 = getSet(curr_token, k - 2, index_to_tag_dict)
-        ## Calculate log-probabilities
-        log_q = np.zeros((num_tags,num_tags))
-        for u in S_k_1:
-            for t in S_k_2:
-                q = _cache.get((curr_token, next_token, u[0], t[0], u[1], t[1]))
-                if q is None:
-                    features = extract_features_base(curr_token, next_token, u[0], t[0], u[1], t[1])
-                    feat_vec = vec.transform(features)
-                    # The next two lines are to fix the mismatch of not seeing '*' label in training
-                    probs = logreg.predict_log_proba(feat_vec)[0]
-                    _cache[(curr_token, next_token, u[0], t[0], u[1], t[1])] = q = np.append(probs, -np.inf*np.ones(1))
-                log_q[t[2],:] = q
-            bp_k[u[2], :] = w = np.argmax(pi[-1][:, u[2], None] + log_q, axis=0)
-            pi_k[u[2], :] = pi[-1][w, u[2]] + log_q[w, tag_rng]
+        curr_word = x_k
+        for u in xrange(num_tags - 1) if k > 0 else [tagset['*']]:
+            tag_u = index_to_tag_dict[u]
+            prev_token = (sent[k - 1], tag_u) if k > 0 else ('<s>', '*')
+            if k > 0 and e_word_tag_counts.get(prev_token, 0) == 0:
+                continue
+            next_token = sent[k + 1] if k < (len(sent) - 1) else ('</s>', 'STOP')
+            log_q = np.zeros((num_tags, num_tags))
+            for w in xrange(num_tags - 1) if k > 1 else [tagset['*']]:
+                tag_w = index_to_tag_dict[w]
+                prevprev_token = (sent[k - 2], tag_w) if k > 1 else ('<s>', '*')
+                prob = _cache.get(
+                        (curr_word, next_token, prev_token[0], prevprev_token[0], prev_token[1], prevprev_token[1]))
+                if prob is None:
+                    features = extract_features_base(curr_word, next_token, prev_token[0], prevprev_token[0],
+                                                     prev_token[1], prevprev_token[1])
+                    vectorized_sent = vec.transform(features)
+                    _cache[curr_word, next_token, prev_token[0], prevprev_token[0], prev_token[1], prevprev_token[
+                        1]] = prob = logreg.predict_log_proba(vectorized_sent)[0]
+                log_q[w, 0:num_tags-1] = prob
+        
+            bp_k[u, :] = w = np.argmax(pi[-1][:, u, None] + log_q, axis=0)
+            pi_k[u, :] = pi[-1][w, u] + log_q[w, rng]
+    
         pi.append(pi_k)
         bp.append(bp_k)
 
     yn1, yn = np.unravel_index(np.argmax(pi[-1]), pi[-1].shape)
-    predicted_tags[-1] = yn
+    predicted_tags[-1] = index_to_tag_dict[yn]
 
     if len(sent) == 1:
-        predicted_tags = [index_to_tag_dict[label] for label in predicted_tags]
         return predicted_tags
-    
-    predicted_tags[-2] = yn1
+
+    predicted_tags[-2] = index_to_tag_dict[yn1]
+
     for k in range(len(sent) - 3, -1, -1):
         tag1 = predicted_tags[k + 1]
         tag2 = predicted_tags[k + 2]
-        yk = bp[k + 2][tag1, tag2]
-        predicted_tags[k] = yk
+        yk = bp[k + 2][tagset[tag1], tagset[tag2]]
+        predicted_tags[k] = index_to_tag_dict[yk]
 
-    for j, label in enumerate(predicted_tags):
-        predicted_tags[j] = index_to_tag_dict[label]
-    ### END YOUR CODE
+    
+    # predicted_tags = [""] * (len(sent))
+    # ### YOUR CODE HERE
+    # ## working with log probabilities for stability
+    #
+    # def getSet(word, index, index_to_tag_dict):
+    #     if index >= 0:
+    #         S = {(word[0], tag, idx) for idx, tag in index_to_tag_dict.items() \
+    #              if extra_decoding_arguments['e_word_tag_counts'].get((word[0], tag),0) > 0}
+    #     else:
+    #         S = {('<st>', '*', len(index_to_tag_dict) - 1)}
+    #     return S
+    #
+    # tag_rng = np.array(sorted(index_to_tag_dict.keys()))
+    # num_tags = len(tag_rng)
+    # pi0 = -np.inf * np.ones((num_tags, num_tags))
+    # pi0[tag_rng[-1],tag_rng[-1]] = 0  # pi(0,*,*) = log(1)
+    # pi = [pi0]
+    # bp = []
+    # _cache = {}
+    # for k in xrange(len(sent)):
+    #     pi_k = -np.inf * np.ones((num_tags, num_tags))
+    #     bp_k = np.zeros((num_tags, num_tags), int)
+    #     curr_token = sent[k]
+    #     next_token = sent[k + 1] if k < len(sent) - 1 else ('</s>', 'STOP')
+    #     S_k = getSet(curr_token, k, index_to_tag_dict)
+    #     S_k_1 = getSet(curr_token, k - 1, index_to_tag_dict)
+    #     S_k_2 = getSet(curr_token, k - 2, index_to_tag_dict)
+    #     ## Calculate log-probabilities
+    #     log_q = np.zeros((num_tags,num_tags))
+    #     for u in S_k_1:
+    #         for t in S_k_2:
+    #             q = _cache.get((curr_token, next_token, u[0], t[0], u[1], t[1]))
+    #             if q is None:
+    #                 features = extract_features_base(curr_token, next_token, u[0], t[0], u[1], t[1])
+    #                 feat_vec = vec.transform(features)
+    #                 # The next two lines are to fix the mismatch of not seeing '*' label in training
+    #                 probs = logreg.predict_log_proba(feat_vec)[0]
+    #                 _cache[(curr_token, next_token, u[0], t[0], u[1], t[1])] = q = np.append(probs, -np.inf*np.ones(1))
+    #             log_q[t[2],:] = q
+    #         bp_k[u[2], :] = w = np.argmax(pi[-1][:, u[2], None] + log_q, axis=0)
+    #         pi_k[u[2], :] = pi[-1][w, u[2]] + log_q[w, tag_rng]
+    #     pi.append(pi_k)
+    #     bp.append(bp_k)
+    #
+    # yn1, yn = np.unravel_index(np.argmax(pi[-1]), pi[-1].shape)
+    # predicted_tags[-1] = yn
+    #
+    # if len(sent) == 1:
+    #     predicted_tags = [index_to_tag_dict[label] for label in predicted_tags]
+    #     return predicted_tags
+    #
+    # predicted_tags[-2] = yn1
+    # for k in range(len(sent) - 3, -1, -1):
+    #     tag1 = predicted_tags[k + 1]
+    #     tag2 = predicted_tags[k + 2]
+    #     yk = bp[k + 2][tag1, tag2]
+    #     predicted_tags[k] = yk
+    #
+    # for j, label in enumerate(predicted_tags):
+    #     predicted_tags[j] = index_to_tag_dict[label]
+    # ### END YOUR CODE
     return predicted_tags
 
 def should_log(sentence_index):
@@ -316,11 +378,6 @@ if __name__ == "__main__":
     all_examples = train_examples
     all_examples.extend(dev_examples)
 
-    print "Vectorize examples"
-    all_examples_vectorized = vec.fit_transform(all_examples)
-    train_examples_vectorized = all_examples_vectorized[:num_train_examples]
-    dev_examples_vectorized = all_examples_vectorized[num_train_examples:]
-    print "Done"
     end_make_vars = time.time()
     
     print "Making var took %s" % (full_flow_start - end_make_vars)
@@ -330,6 +387,11 @@ if __name__ == "__main__":
         with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model.pkl", 'rb') as f:
             logreg, vec = pickle.load(f)
     else:
+        print "Vectorize examples"
+        all_examples_vectorized = vec.fit_transform(all_examples)
+        train_examples_vectorized = all_examples_vectorized[:num_train_examples]
+        dev_examples_vectorized = all_examples_vectorized[num_train_examples:]
+        print "Done"
         # t_l_set = set(train_labels)
         logreg = linear_model.LogisticRegression(
             multi_class='multinomial', max_iter=128, solver='lbfgs', C=100000, verbose=1)
