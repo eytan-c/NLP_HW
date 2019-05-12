@@ -279,7 +279,7 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
             prevprev_word = sent[k - 3] if k > 2 else "<st>"
             word_features = extract_features_base(curr_word, next_token[0], prev_word, prevprev_word, u, t)
             word_vec = vectorize_features(vec, word_features)
-            Q[t_index, :] = logreg.predeict_log_proba(word_vec)  ## for every u we have such a matrix
+            Q[t_index, :] = logreg.predict_log_proba(word_vec)  ## for every u we have such a matrix
             ##### END Calculate q(v|t,u,w,k)
             Q[t_index, :] = pi.get((k - 1, t, u), 0) + Q[t_index,:]  ## the matrix Q is per each u, and for each t we need to add the probabilities from before if exist. If they don't then -inf ## TODO might need to change the defualt falue of the pi.get() to -np.inf
         ### And the end of the loop on t, we have a matrix Q with rows indexed by tag t, and columns indexed by tag v. Thus, we need to calculate the max and argmax of each columns, and they are the correponding values for the pi(k,u,v)
