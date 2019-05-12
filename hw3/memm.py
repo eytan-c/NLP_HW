@@ -155,67 +155,67 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
         Returns: predicted tags for the sentence
     """
     
-    """
-    ###
-    # Reference
-    ###
-
-    predicted_tags = [""] * (len(sent))
-
-    ### YOUR CODE HERE
-    e_word_tag_counts = extra_decoding_arguments['e_word_tag_counts']
-    tagset = tag_to_idx_dict
-    _cache = {}
-    num_tags = len(tagset)
-    rng = np.arange(num_tags)
-    pi0 = -np.inf * np.ones((num_tags, num_tags))
-    pi0[tagset['*'], tagset['*']] = 0
-    pi = [pi0]
-    bp = []
-    for k, x_k in enumerate(sent):
-        pi_k = -np.inf * np.ones((num_tags, num_tags))
-        bp_k = np.zeros((num_tags, num_tags), int)
-        curr_word = x_k
-        for u in xrange(num_tags - 1) if k > 0 else [tagset['*']]:
-            tag_u = index_to_tag_dict[u]
-            prev_token = (sent[k - 1], tag_u) if k > 0 else ('<s>', '*')
-            if k > 0 and e_word_tag_counts.get(prev_token, 0) == 0:
-                continue
-            next_token = sent[k + 1] if k < (len(sent) - 1) else ('</s>', 'STOP')
-            log_q = np.zeros((num_tags, num_tags))
-            for w in xrange(num_tags - 1) if k > 1 else [tagset['*']]:
-                tag_w = index_to_tag_dict[w]
-                prevprev_token = (sent[k - 2], tag_w) if k > 1 else ('<s>', '*')
-                prob = _cache.get(
-                        (curr_word, next_token, prev_token[0], prevprev_token[0], prev_token[1], prevprev_token[1]))
-                if prob is None:
-                    features = extract_features_base(curr_word, next_token, prev_token[0], prevprev_token[0],
-                                                     prev_token[1], prevprev_token[1])
-                    vectorized_sent = vec.transform(features)
-                    _cache[curr_word, next_token, prev_token[0], prevprev_token[0], prev_token[1], prevprev_token[
-                        1]] = prob = logreg.predict_log_proba(vectorized_sent)[0]
-                log_q[w, 0:num_tags-1] = prob
-        
-            bp_k[u, :] = w = np.argmax(pi[-1][:, u, None] + log_q, axis=0)
-            pi_k[u, :] = pi[-1][w, u] + log_q[w, rng]
-    
-        pi.append(pi_k)
-        bp.append(bp_k)
-
-    yn1, yn = np.unravel_index(np.argmax(pi[-1]), pi[-1].shape)
-    predicted_tags[-1] = index_to_tag_dict[yn]
-
-    if len(sent) == 1:
-        return predicted_tags
-
-    predicted_tags[-2] = index_to_tag_dict[yn1]
-
-    for k in range(len(sent) - 3, -1, -1):
-        tag1 = predicted_tags[k + 1]
-        tag2 = predicted_tags[k + 2]
-        yk = bp[k + 2][tagset[tag1], tagset[tag2]]
-        predicted_tags[k] = index_to_tag_dict[yk]
-    """
+    # """
+    # ###
+    # # Reference
+    # ###
+    #
+    # predicted_tags = [""] * (len(sent))
+    #
+    # ### YOUR CODE HERE
+    # e_word_tag_counts = extra_decoding_arguments['e_word_tag_counts']
+    # tagset = tag_to_idx_dict
+    # _cache = {}
+    # num_tags = len(tagset)
+    # rng = np.arange(num_tags)
+    # pi0 = -np.inf * np.ones((num_tags, num_tags))
+    # pi0[tagset['*'], tagset['*']] = 0
+    # pi = [pi0]
+    # bp = []
+    # for k, x_k in enumerate(sent):
+    #     pi_k = -np.inf * np.ones((num_tags, num_tags))
+    #     bp_k = np.zeros((num_tags, num_tags), int)
+    #     curr_word = x_k
+    #     for u in xrange(num_tags - 1) if k > 0 else [tagset['*']]:
+    #         tag_u = index_to_tag_dict[u]
+    #         prev_token = (sent[k - 1], tag_u) if k > 0 else ('<s>', '*')
+    #         if k > 0 and e_word_tag_counts.get(prev_token, 0) == 0:
+    #             continue
+    #         next_token = sent[k + 1] if k < (len(sent) - 1) else ('</s>', 'STOP')
+    #         log_q = np.zeros((num_tags, num_tags))
+    #         for w in xrange(num_tags - 1) if k > 1 else [tagset['*']]:
+    #             tag_w = index_to_tag_dict[w]
+    #             prevprev_token = (sent[k - 2], tag_w) if k > 1 else ('<s>', '*')
+    #             prob = _cache.get(
+    #                     (curr_word, next_token, prev_token[0], prevprev_token[0], prev_token[1], prevprev_token[1]))
+    #             if prob is None:
+    #                 features = extract_features_base(curr_word, next_token, prev_token[0], prevprev_token[0],
+    #                                                  prev_token[1], prevprev_token[1])
+    #                 vectorized_sent = vec.transform(features)
+    #                 _cache[curr_word, next_token, prev_token[0], prevprev_token[0], prev_token[1], prevprev_token[
+    #                     1]] = prob = logreg.predict_log_proba(vectorized_sent)[0]
+    #             log_q[w, 0:num_tags-1] = prob  ##TODO the problem is that the indexing is bad
+    #
+    #         bp_k[u, :] = w = np.argmax(pi[-1][:, u, None] + log_q, axis=0)
+    #         pi_k[u, :] = pi[-1][w, u] + log_q[w, rng]
+    #
+    #     pi.append(pi_k)
+    #     bp.append(bp_k)
+    #
+    # yn1, yn = np.unravel_index(np.argmax(pi[-1]), pi[-1].shape)
+    # predicted_tags[-1] = index_to_tag_dict[yn]
+    #
+    # if len(sent) == 1:
+    #     return predicted_tags
+    #
+    # predicted_tags[-2] = index_to_tag_dict[yn1]
+    #
+    # for k in range(len(sent) - 3, -1, -1):
+    #     tag1 = predicted_tags[k + 1]
+    #     tag2 = predicted_tags[k + 2]
+    #     yk = bp[k + 2][tagset[tag1], tagset[tag2]]
+    #     predicted_tags[k] = index_to_tag_dict[yk]
+    # """
 
     
     predicted_tags = [""] * (len(sent))
@@ -267,34 +267,54 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
         if word in VBs:
             return 'VB'
         return ''
+    
+    def calculatePi(pi, k, u, curr_word, sent, num_tags, tag_to_index_dict=tag_to_idx_dict, e_word_tag_counts=extra_decoding_arguments['e_word_tag_counts'], logreg=logreg, vec=vec):
+        Q = -np.inf * np.ones(num_tags, num_tags - 1)
+        if (sent[k - 2], u) not in e_word_tag_counts: 0  ##TODO This never happens because the makeSet take care of this. Need to make sure
+        for t in getSet(k - 2, S):  # a list of valid tags as strings
+            t_index = tag_to_index_dict[t]
+            ##### Calculate q(v|t,u,w,k) for a specific t, and specific u
+            next_token = sent[k] if k < n else ("</s>", "STOP")
+            prev_word = sent[k - 2] if k > 1 else "<st>"
+            prevprev_word = sent[k - 3] if k > 2 else "<st>"
+            word_features = extract_features_base(curr_word, next_token[0], prev_word, prevprev_word, u, t)
+            word_vec = vectorize_features(vec, word_features)
+            Q[t_index, :] = logreg.predeict_log_proba(word_vec)  ## for every u we have such a matrix
+            ##### END Calculate q(v|t,u,w,k)
+            Q[t_index, :] = pi.get((k - 1, t, u), 0) + Q[t_index,:]  ## the matrix Q is per each u, and for each t we need to add the probabilities from before if exist. If they don't then -inf ## TODO might need to change the defualt falue of the pi.get() to -np.inf
+        ### And the end of the loop on t, we have a matrix Q with rows indexed by tag t, and columns indexed by tag v. Thus, we need to calculate the max and argmax of each columns, and they are the correponding values for the pi(k,u,v)
+        max_probs = np.max(Q, axis=0)  # axis=0 is columns
+        argmax_probs = np.argmax(Q, axis=0)
+        return max_probs, argmax_probs
 
-    def get_q(v, t, u, sent, k, curr_word):
-        next_token = sent[k][0] if k < n else ("</s>", "STOP")
-        prev_token = sent[k - 2] if k > 1 else ("<st>", "*")
-        prevprev_token = sent[k - 3] if k > 2 else ("<st>", "*")
-        word_features = extract_features_base(curr_word, next_word)
+    def get_end_tags(pi):
+        max_pi = -np.inf
+        best_u = ''
+        best_v = ''
 
-    def updatePi(pi, k, u, v, curr_word, sent):
-        max_pi = float('-inf')
-        argmax_pi = None
-
-        for t in getSet(k - 2, S):
-            current = pi[(k - 1, t, u)] * get_q(v, t, u, sent, k, curr_word) * get_e(curr_word, v)
-            if current > max_pi:
-                max_pi = current
-                argmax_pi = t
-        return max_pi, argmax_pi
-
+        for u in getSet(n - 1, S):
+            for v in getSet(n, S):
+                current_pi = pi[(n, u, v)]
+                if current_pi > max_pi:
+                    max_pi = current_pi
+                    best_u = u
+                    best_v = v
+        return best_u, best_v
+    
     pi = {(0, '*', '*'): 1}
     bp = {}
     S = {}
     for k in xrange(1, n + 1):  # notice k is corrsponded with index k-1 in sent
         curr_word = sent[k - 1][0]  # sen is (word, tag) pairs
         for u in getSet(k - 1, S):
-            for v in getSet(k, S):
-                max_pi, w = updatePi(pi, k, u, v, curr_word, sent)  # needs to return the max and argmax by t of pi(k-1,t,u) * q(v|(t,u,w,k)), t in S_k-2
-                pi[(k, u, v)] = max_pi
-                bp[(k, u, v)] = w
+            max_probs, argmax_probs = calculatePi(pi, k, u, curr_word, sent, num_tags=len(index_to_tag_dict))  # needs to return the max and argmax by t of pi(k-1,t,u) * q(v|(t,u,w,k)), t in S_k-2
+            for i in range(len(max_probs)):  # for v in S_k
+                v = index_to_tag_dict[i]
+                if max_probs[i] != -np.inf:  # makes sure that this is valid
+                    pi[(k, u, v)] = max_probs[i]
+                    bp[(k, u, v)] = index_to_tag_dict[argmax_probs[i]]
+        
+    
     predicted_tags[n - 2], predicted_tags[n - 1] = get_end_tags(pi)
     for k in xrange(n - 2, 0, -1):
         predicted_tags[k - 1] = bp[(k + 2, predicted_tags[k], predicted_tags[k + 1])]
@@ -302,6 +322,10 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
     return predicted_tags
     
     
+    # ##########
+    # ### My Initial Try
+    # ##########
+    #
     # def getSet(word, index, index_to_tag_dict):
     #  if index >= 0:
     #         S = {(word[0], tag, idx) for idx, tag in index_to_tag_dict.items() \
