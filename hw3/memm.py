@@ -269,7 +269,7 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
         return ''
     
     def calculatePi(pi, k, u, curr_word, sent, num_tags, tag_to_index_dict=tag_to_idx_dict, e_word_tag_counts=extra_decoding_arguments['e_word_tag_counts'], logreg=logreg, vec=vec):
-        Q = -np.inf * np.ones(num_tags, num_tags - 1)
+        Q = -np.inf * np.ones((num_tags, num_tags - 1))
         if (sent[k - 2], u) not in e_word_tag_counts: 0  ##TODO This never happens because the makeSet take care of this. Need to make sure
         for t in getSet(k - 2, S):  # a list of valid tags as strings
             t_index = tag_to_index_dict[t]
