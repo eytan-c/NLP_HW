@@ -155,6 +155,7 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
         Returns: predicted tags for the sentence
     """
     
+    """
     ###
     # Reference
     ###
@@ -214,14 +215,95 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
         tag2 = predicted_tags[k + 2]
         yk = bp[k + 2][tagset[tag1], tagset[tag2]]
         predicted_tags[k] = index_to_tag_dict[yk]
+    """
 
     
-    # predicted_tags = [""] * (len(sent))
-    # ### YOUR CODE HERE
-    # ## working with log probabilities for stability
-    #
+    predicted_tags = [""] * (len(sent))
+    ### YOUR CODE HERE
+    ## working with log probabilities for stability
+
+    n = len(sent)
+
+    def getSet(set_num, S):
+        '''
+				gets all possible tags for word in index set_num - 1
+				'''
+        if set_num > 0:
+            word = sent[set_num - 1]
+            if word not in S:
+                prun = prunning(set_num - 1)
+                if prun != '':  # if word has pre known tag
+                    S[word] = {prun}
+                else:  # the only possible tags are one seen in the train for this word
+                    S[word] = {tag for (w, tag) in extra_decoding_arguments["e_word_tag_counts"] if w == word}
+            return S[word]
+        else:
+            return {'*'}
+
+    def prunning(i):
+        '''
+
+        :param i: word index in sent to check if tag is known
+        :return: if words is one in known words lists get back it's tag, return empty '' o.w
+        '''
+        DTs = {'the', 'The', 'those', 'Those', 'a', 'an', 'An', 'Another', 'another', 'any', 'Any'}
+        MDs = {'would', 'can', 'may', 'will'}
+        VBZs = {'is', 'has', 'does'}
+        VBs = {'be'}
+
+        word = sent[i]
+        if word == ',':
+            return ','
+        if word == '.':
+            return '.'
+        if word in DTs:
+            return 'DT'
+        if word == 'of':
+            return 'IN'
+        if word in MDs:
+            return 'MD'
+        if word in VBZs:
+            return 'VBZ'
+        if word in VBs:
+            return 'VB'
+        return ''
+
+    def get_q(v, t, u, sent, k, curr_word):
+        next_token = sent[k][0] if k < n else ("</s>", "STOP")
+        prev_token = sent[k - 2] if k > 1 else ("<st>", "*")
+        prevprev_token = sent[k - 3] if k > 2 else ("<st>", "*")
+        word_features = extract_features_base(curr_word, next_word)
+
+    def updatePi(pi, k, u, v, curr_word, sent):
+        max_pi = float('-inf')
+        argmax_pi = None
+
+        for t in getSet(k - 2, S):
+            current = pi[(k - 1, t, u)] * get_q(v, t, u, sent, k, curr_word) * get_e(curr_word, v)
+            if current > max_pi:
+                max_pi = current
+                argmax_pi = t
+        return max_pi, argmax_pi
+
+    pi = {(0, '*', '*'): 1}
+    bp = {}
+    S = {}
+    for k in xrange(1, n + 1):  # notice k is corrsponded with index k-1 in sent
+        curr_word = sent[k - 1][0]  # sen is (word, tag) pairs
+        for u in getSet(k - 1, S):
+            for v in getSet(k, S):
+                max_pi, w = updatePi(pi, k, u, v, curr_word, sent)  # needs to return the max and argmax by t of pi(k-1,t,u) * q(v|(t,u,w,k)), t in S_k-2
+                pi[(k, u, v)] = max_pi
+                bp[(k, u, v)] = w
+    predicted_tags[n - 2], predicted_tags[n - 1] = get_end_tags(pi)
+    for k in xrange(n - 2, 0, -1):
+        predicted_tags[k - 1] = bp[(k + 2, predicted_tags[k], predicted_tags[k + 1])]
+    ### END YOUR CODE
+    return predicted_tags
+    
+    
     # def getSet(word, index, index_to_tag_dict):
-    #     if index >= 0:
+    #  if index >= 0:
     #         S = {(word[0], tag, idx) for idx, tag in index_to_tag_dict.items() \
     #              if extra_decoding_arguments['e_word_tag_counts'].get((word[0], tag),0) > 0}
     #     else:
@@ -247,13 +329,13 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
     #     log_q = np.zeros((num_tags,num_tags))
     #     for u in S_k_1:
     #         for t in S_k_2:
-    #             q = _cache.get((curr_token, next_token, u[0], t[0], u[1], t[1]))
+    #             q = _cache.get((curr_token, next_token[0], u[0], t[0], u[1], t[1]))
     #             if q is None:
-    #                 features = extract_features_base(curr_token, next_token, u[0], t[0], u[1], t[1])
+    #                 features = extract_features_base(curr_token, next_token[0], u[0], t[0], u[1], t[1])
     #                 feat_vec = vec.transform(features)
     #                 # The next two lines are to fix the mismatch of not seeing '*' label in training
     #                 probs = logreg.predict_log_proba(feat_vec)[0]
-    #                 _cache[(curr_token, next_token, u[0], t[0], u[1], t[1])] = q = np.append(probs, -np.inf*np.ones(1))
+    #                 _cache[(curr_token, next_token[0], u[0], t[0], u[1], t[1])] = q = np.append(probs, -np.inf*np.ones(1))
     #             log_q[t[2],:] = q
     #         bp_k[u[2], :] = w = np.argmax(pi[-1][:, u[2], None] + log_q, axis=0)
     #         pi_k[u[2], :] = pi[-1][w, u[2]] + log_q[w, tag_rng]
@@ -277,7 +359,7 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
     # for j, label in enumerate(predicted_tags):
     #     predicted_tags[j] = index_to_tag_dict[label]
     # ### END YOUR CODE
-    return predicted_tags
+    # return predicted_tags
 
 def should_log(sentence_index):
     if sentence_index > 0 and sentence_index % 10 == 0:
