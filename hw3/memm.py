@@ -270,7 +270,7 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
     
     def calculatePi(pi, k, u, curr_word, sent, num_tags, tag_to_index_dict=tag_to_idx_dict, e_word_tag_counts=extra_decoding_arguments['e_word_tag_counts'], logreg=logreg, vec=vec):
         Q = -np.inf * np.ones((num_tags, num_tags - 1))
-        if (sent[k - 2], u) not in e_word_tag_counts: 0  ##TODO This never happens because the makeSet take care of this. Need to make sure
+        if (sent[k - 2], u) not in e_word_tag_counts: 0  ##TODO This never happens because the makeSet take care of this. Need to make sure (itay) - you are right, delete this
         for t in getSet(k - 2, S):  # a list of valid tags as strings
             t_index = tag_to_index_dict[t]
             ##### Calculate q(v|t,u,w,k) for a specific t, and specific u
@@ -454,13 +454,13 @@ if __name__ == "__main__":
 
     vocab = compute_vocab_count(train_sents)
     train_sents = preprocess_sent(vocab, train_sents)
-    if os.path.exists("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\args.pkl"):
+    if os.path.exists("pickles\\args.pkl"):
         print "Opening arg.pkl...."
-        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\args.pkl", 'rb') as f:
+        with open("C:\\School\\nlp\\NLP_HW\\hw3\\pickles\\args.pkl", 'rb') as f:
             extra_decoding_arguments = pickle.load(f)
     else:
         extra_decoding_arguments = build_extra_decoding_arguments(train_sents)
-        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\args.pkl", 'wb') as f:
+        with open("C:\\School\\nlp\\NLP_HW\\hw3\\pickles\\args.pkl", 'wb') as f:
             pickle.dump(extra_decoding_arguments, f, protocol=-1)
     dev_sents = preprocess_sent(vocab, dev_sents)
     tag_to_idx_dict = build_tag_to_idx_dict(train_sents)

@@ -199,8 +199,8 @@ def hmm_eval(test_data, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e
     print "Start evaluation"
     acc_viterbi = 0.0
     ### YOUR CODE HERE
-    lambda1 = 0.481
-    lambda2 = 0.394
+    lambda1 = 0.78
+    lambda2 = 0.22
 
     correct = 0
     total = 0
@@ -217,7 +217,6 @@ def hmm_eval(test_data, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e
     acc_viterbi = float(correct) / total
     ### END YOUR CODE
     return acc_viterbi
-
 
 if __name__ == "__main__":
     start_time = time.time()
