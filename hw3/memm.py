@@ -229,16 +229,16 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
 				gets all possible tags for word in index set_num - 1
 				'''
         if set_num > 0:
-            word = sent[set_num - 1]
+            word = sent[set_num - 1][0]
             if word not in S:
                 prun = prunning(set_num - 1)
                 if prun != '':  # if word has pre known tag
-                    S[word] = {prun}
+                    S[word] = [prun]
                 else:  # the only possible tags are one seen in the train for this word
-                    S[word] = {tag for (w, tag) in extra_decoding_arguments["e_word_tag_counts"] if w == word}
+                    S[word] = [tag for (w, tag) in extra_decoding_arguments["e_word_tag_counts"] if w == word]
             return S[word]
         else:
-            return {'*'}
+            return ['*']
 
     def prunning(i):
         '''
