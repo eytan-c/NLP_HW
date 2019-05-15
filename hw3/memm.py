@@ -59,7 +59,8 @@ def build_extra_decoding_arguments(train_sents):
                                 "q_bi_counts": q_bi_counts,
                                 "q_uni_counts": q_uni_counts,
                                 "e_word_tag_counts": e_word_tag_counts,
-                                "e_tag_counts": e_tag_counts}
+                                "e_tag_counts": e_tag_counts,
+                                "cache": {}}
     ### END YOUR CODE
 
     return extra_decoding_arguments
@@ -268,7 +269,7 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
             return 'VB'
         return ''
     
-    def calculatePi(pi, k, u, curr_word, sent, num_tags, tag_to_index_dict=tag_to_idx_dict, e_word_tag_counts=extra_decoding_arguments['e_word_tag_counts'], logreg=logreg, vec=vec):
+    def calculatePi(pi, k, u, curr_word, sent, num_tags, cache=extra_decoding_arguments['cache'], tag_to_index_dict=tag_to_idx_dict, e_word_tag_counts=extra_decoding_arguments['e_word_tag_counts'], logreg=logreg, vec=vec):
         Q = -np.inf * np.ones((num_tags, num_tags - 1))
         if (sent[k - 2], u) not in e_word_tag_counts: 0  ##TODO This never happens because the makeSet take care of this. Need to make sure (itay) - you are right, delete this
         for t in getSet(k - 2, S):  # a list of valid tags as strings
@@ -277,9 +278,13 @@ def memm_viterbi(sent, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
             next_token = sent[k] if k < n else ("</s>", "STOP")
             prev_word = sent[k - 2] if k > 1 else "<st>"
             prevprev_word = sent[k - 3] if k > 2 else "<st>"
-            word_features = extract_features_base(curr_word, next_token[0], prev_word, prevprev_word, u, t)
-            word_vec = vectorize_features(vec, word_features)
-            Q[t_index, :] = logreg.predict_log_proba(word_vec)  ## for every u we have such a matrix
+            if (curr_word, next_token[0], prev_word, prevprev_word, u, t) in cache.keys():
+                probs = cache[(curr_word, next_token[0], prev_word, prevprev_word, u, t)]
+            else:
+                word_features = extract_features_base(curr_word, next_token[0], prev_word, prevprev_word, u, t)
+                word_vec = vectorize_features(vec, word_features)
+                probs = logreg.predict_log_proba(word_vec)
+            Q[t_index, :] = probs  ## for every u we have such a matrix
             ##### END Calculate q(v|t,u,w,k)
             Q[t_index, :] = pi.get((k - 1, t, u), 0) + Q[t_index,:]  ## the matrix Q is per each u, and for each t we need to add the probabilities from before if exist. If they don't then -inf ## TODO might need to change the defualt falue of the pi.get() to -np.inf
         ### And the end of the loop on t, we have a matrix Q with rows indexed by tag t, and columns indexed by tag v. Thus, we need to calculate the max and argmax of each columns, and they are the correponding values for the pi(k,u,v)
@@ -392,6 +397,32 @@ def should_log(sentence_index):
 
     return False
 
+def memm_analyze_error(test_data, logreg, vec, index_to_tag_dict, extra_decoding_arguments):
+    greedy_errors = {}
+    vit_errors = {}
+
+    for i, sen in enumerate(test_data):
+        ### YOUR CODE HERE
+        ### Make sure to update Viterbi and greedy accuracy
+        # sen_features = [extract_features(sen, i) for i in xrange(len(sen))]
+        # sen_vec = vec.transform(sen_features)
+        if len(greedy_errors) <= 20:
+            greedy_tags = memm_greedy(sen, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
+            mtc_greed = [greedy_tags[k] == sen[k][1] for k in xrange(len(sen))]
+            greedy_num = sum(mtc_greed)
+            if greedy_num != len(sen):
+                greedy_errors[i] = np.array([sen, greedy_tags, mtc_greed])
+        if len(vit_errors) <= 20:
+            viterbi_tags = memm_viterbi(sen, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
+            mtc_vit = [viterbi_tags[k] == sen[k][1] for k in xrange(len(sen))]
+            viterbi_num = sum(mtc_vit)
+            if viterbi_num != len(sen):
+                vit_errors[i] = np.array([sen, viterbi_tags, mtc_vit])
+        print 'iteration %s, Number of vit_errors %s, Number of greedy_errors %s' % (i, len(vit_errors), len(greedy_errors))
+        if len(vit_errors) > 20 and len(greedy_errors) > 20:
+            break
+    return greedy_errors, vit_errors
+
 
 def memm_eval(test_data, logreg, vec, index_to_tag_dict, extra_decoding_arguments):
     """
@@ -404,7 +435,7 @@ def memm_eval(test_data, logreg, vec, index_to_tag_dict, extra_decoding_argument
     correct_greedy_preds = 0
     correct_viterbi_preds = 0
     total_words_count = 0
-
+    
     for i, sen in enumerate(test_data):
         ### YOUR CODE HERE
         ### Make sure to update Viterbi and greedy accuracy
@@ -412,10 +443,18 @@ def memm_eval(test_data, logreg, vec, index_to_tag_dict, extra_decoding_argument
         # sen_vec = vec.transform(sen_features)
         total_words_count += len(sen)
         greedy_tags = memm_greedy(sen, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
-        greedy_num = sum([greedy_tags[k] == sen[k][1] for k in xrange(len(sen))])
+        greedy_match = [greedy_tags[k] == sen[k][1] for k in xrange(len(sen))]
+        # for s, match in enumerate(greedy_match):
+        #     if not match:
+        #         greedy_errors.append([sen[s][0],sen[s][1],greedy_tags[s]])
+        greedy_num = sum(greedy_match)
         correct_greedy_preds += greedy_num
         viterbi_tags = memm_viterbi(sen, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
-        viterbi_num = sum([viterbi_tags[k] == sen[k][1] for k in xrange(len(sen))])
+        viterbi_match = [viterbi_tags[k] == sen[k][1] for k in xrange(len(sen))]
+        # for s, match in enumerate(viterbi_match):
+        #     if not match:
+        #         viterbi_errors.append([sen[s][0],sen[s][1],greedy_tags[s]])
+        viterbi_num = sum(viterbi_match)
         correct_viterbi_preds += viterbi_num
         acc_greedy = float(greedy_num) / len(sen)
         acc_viterbi = float(viterbi_num) / len(sen)
@@ -454,14 +493,14 @@ if __name__ == "__main__":
 
     vocab = compute_vocab_count(train_sents)
     train_sents = preprocess_sent(vocab, train_sents)
-    if os.path.exists("pickles\\args.pkl"):
-        print "Opening arg.pkl...."
-        with open("C:\\School\\nlp\\NLP_HW\\hw3\\pickles\\args.pkl", 'rb') as f:
-            extra_decoding_arguments = pickle.load(f)
-    else:
-        extra_decoding_arguments = build_extra_decoding_arguments(train_sents)
-        with open("C:\\School\\nlp\\NLP_HW\\hw3\\pickles\\args.pkl", 'wb') as f:
-            pickle.dump(extra_decoding_arguments, f, protocol=-1)
+    # if os.path.exists("pickles\\arg.pkl"):
+    print "Opening arg.pkl...."
+        # with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\args.pkl", 'rb') as f:
+            # extra_decoding_arguments = pickle.load(f)
+    # else:
+    extra_decoding_arguments = build_extra_decoding_arguments(train_sents)
+        # with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\args.pkl", 'wb') as f:
+        #     pickle.dump(extra_decoding_arguments, f, protocol=-1)
     dev_sents = preprocess_sent(vocab, dev_sents)
     tag_to_idx_dict = build_tag_to_idx_dict(train_sents)
     index_to_tag_dict = invert_dict(tag_to_idx_dict)
@@ -488,42 +527,50 @@ if __name__ == "__main__":
     
     print "Making var took %s" % (full_flow_start - end_make_vars)
     #### For faster debugging - saved all the non Q4 objects in pickle###
-    if os.path.exists("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model.pkl"):
-        print "Opening model.pkl...."
-        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model.pkl", 'rb') as f:
-            logreg, vec = pickle.load(f)
-    else:
-        print "Vectorize examples"
-        all_examples_vectorized = vec.fit_transform(all_examples)
-        train_examples_vectorized = all_examples_vectorized[:num_train_examples]
-        dev_examples_vectorized = all_examples_vectorized[num_train_examples:]
-        print "Done"
-        # t_l_set = set(train_labels)
-        logreg = linear_model.LogisticRegression(
-            multi_class='multinomial', max_iter=128, solver='lbfgs', C=100000, verbose=1)
-        print "Fitting..."
-        start = time.time()
-        logreg.fit(train_examples_vectorized, train_labels)
-        end = time.time()
-        print "End training, elapsed " + str(end - start) + " seconds"
-        # End of log linear model training
+    # if os.path.exists("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model.pkl"):
+        # print "Opening model.pkl...."
+        # with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model.pkl", 'rb') as f:
+        #     logreg, vec = pickle.load(f)
+    # else:
+    print "Vectorize examples"
+    all_examples_vectorized = vec.fit_transform(all_examples)
+    train_examples_vectorized = all_examples_vectorized[:num_train_examples]
+    dev_examples_vectorized = all_examples_vectorized[num_train_examples:]
+    print "Done"
+    # t_l_set = set(train_labels)
+    logreg = linear_model.LogisticRegression(
+        multi_class='multinomial', max_iter=128, solver='lbfgs', C=100000, verbose=1)
+    print "Fitting..."
+    start = time.time()
+    logreg.fit(train_examples_vectorized, train_labels)
+    end = time.time()
+    print "End training, elapsed " + str(end - start) + " seconds"
+    # End of log linear model training
 
-        # with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\initial_objs.pkl", 'wb') as f:
-        #     pickle.dump([train_sents, dev_sents,vocab,extra_decoding_arguments,tag_to_idx_dict,index_to_tag_dict], f, protocol=-1)
-        # with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\data_objs.pkl", 'wb') as f:
-        #     pickle.dump([train_examples,train_labels,dev_examples,dev_labels,all_examples_vectorized,train_examples_vectorized,dev_examples_vectorized], f, protocol=-1)
-        with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model_2.pkl", 'wb') as f:
-            pickle.dump([logreg, vec], f, protocol=-1)
+    # with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\initial_objs.pkl", 'wb') as f:
+    #     pickle.dump([train_sents, dev_sents,vocab,extra_decoding_arguments,tag_to_idx_dict,index_to_tag_dict], f, protocol=-1)
+    # with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\data_objs.pkl", 'wb') as f:
+    #     pickle.dump([train_examples,train_labels,dev_examples,dev_labels,all_examples_vectorized,train_examples_vectorized,dev_examples_vectorized], f, protocol=-1)
+    # with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\model_2.pkl", 'wb') as f:
+    #     pickle.dump([logreg, vec], f, protocol=-1)
     
     
     # Evaluation code - do not make any changes
     start = time.time()
     print "Start evaluation on dev set"
+    
+    # greed, viter = memm_analyze_error(dev_sents, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
 
+
+    # greedy_errors = []
+    # viterbi_errors = []
     acc_viterbi, acc_greedy = memm_eval(dev_sents, logreg, vec, index_to_tag_dict, extra_decoding_arguments)
     end = time.time()
     print "Dev: Accuracy greedy memm : " + acc_greedy
     print "Dev: Accuracy Viterbi memm : " + acc_viterbi
+    # print "Saving errors"
+    # with open("C:\\Users\\eytanc\\Documents\\GitHub\\NLP_HW\\NLP_HW\\hw3\\pickles\\errors.pkl", 'wb') as f:
+    #     pickle.dump([greedy_errors, viterbi_errors], f, protocol=-1)
 
     print "Evaluation on dev set elapsed: " + str(end - start) + " seconds"
     if os.path.exists('Penn_Treebank/test.gold.conll'):
