@@ -63,7 +63,12 @@ class PCFG(object):
             Generates a derivation tree from a given symbol
         """
         ### YOUR CODE HERE
-        raise NotImplementedError
+        if self.is_terminal(symbol):
+            return symbol
+        else:
+            expansion = self.random_expansion(symbol)
+            expansion_filled = " ".join(self.gentree(s) for s in expansion)
+            return "("+symbol+" "+expansion_filled+")"
         ### END YOUR CODE
         return ""
 
