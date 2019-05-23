@@ -14,11 +14,12 @@ def load_sents_to_parse(filename):
 
 def cnf_cky(pcfg, sent):
 	### YOUR CODE HERE
+	import numpy as np
 	def init(n, N, Q):  # need to implement
 		pi = {}
 		for X in N:
 			for i in xrange(n):
-				pi[i, i, X] = Q.get((X, sent[i]), 0)
+				pi[i, i, X] = Q.get((X, (sent[i],)), 0)
 		return pi
 	
 	def get_N(i, j):
@@ -33,12 +34,13 @@ def cnf_cky(pcfg, sent):
 		return q_dict
 	
 	def updatePi(pi, i, j, Q):
-		best_pi = float(-1)
+		best_pi = float('-inf')
 		best_rule = ()
 		for rule in Q.keys():
 			for s in xrange(i,j):
 				if len(rule[1]) > 1:
-					curr_pi = Q[rule] * pi[i, s, rule[1][0]] * pi[s+1, j, rule[1][1]]
+					# curr_pi = Q.get(rule,0.0) * pi.get((i, s, rule[1][0]),0) * pi.get((s+1, j, rule[1][1]),0)
+					curr_pi = Q.get(rule, 0.0) * pi[(i, s, rule[1][0])] * pi[(s + 1, j, rule[1][1])]
 					if curr_pi > best_pi:
 						best_pi = curr_pi
 						best_rule = rule
@@ -71,15 +73,14 @@ def cnf_cky(pcfg, sent):
 	pi = init(n, N, Q)
 	bp = {}
 	# print('sums: ', pcfg._sums)
-	print 'Pi: %s' % pi
-	for i in xrange(n - 1):
-		for l in xrange(n - i):
-			j = i + l
+	indices = [ind for gap in xrange(n) for ind in np.ndindex((n,n)) if ind[0]<ind[1] and ind[1]-ind[0] == gap]
+	for (i,j) in indices:
 			# for X in get_N(i, j):
 			for X in N:
 				pi_max, pi_arg_max = updatePi(pi, i, j, Q)
 				pi[i, j, X] = pi_max
 				bp[i, j, X] = pi_arg_max
+	print 'Pi after: %s' % pi
 	return get_derivation(bp)
 	### END YOUR CODE
 	return "FAILED TO PARSE!"
@@ -101,4 +102,3 @@ if __name__ == '__main__':
 	for sent in sents_to_parse:
 		print cnf_cky(cnf_pcfg, sent)
 		print non_cnf_cky(non_cnf_pcfg, sent)
-		break
