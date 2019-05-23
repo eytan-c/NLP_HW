@@ -19,9 +19,10 @@
 
 # Rules for creating full sentences.
 
-1	ROOT	S .
-1	ROOT	S !
-1	ROOT	is it true that S ?     # mixing terminals and nonterminals is ok.
+#1	ROOT	S .
+#1	ROOT	S !
+1   ROOT    S END
+#1	ROOT	is it true that S ?     # mixing terminals and nonterminals is ok.
 
 # The basic grammar rules.  Here's what the abbreviations stand for:
 #    S  = sentence
@@ -38,6 +39,8 @@
 0.1	NP	NP PP
 1	PP	Prep NP
 2	Noun	Adj Noun
+1   END .
+1   END !
 
 # Vocabulary.  Your program can see that "ate" is a terminal
 # symbol because there exists no rule for rewriting it.
@@ -59,6 +62,7 @@
 1	Noun	sandwich
 1	Noun	pickle
 1	Noun	chief of staff
+1	Noun	kid of chief staff
 1	Noun	floor
 
 1	Adj	fine
