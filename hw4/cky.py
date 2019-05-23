@@ -52,11 +52,11 @@ def cnf_cky(pcfg, sent):
 
         def expand(index, symbol):
             if bp.get((index[0], index[1], symbol)) is None:
-                print("expend: index, symbol, NO bp ", index, symbol)
-                if index[0] == index[1]:
-                    return sent[index[0]]
+                #print("expend: index, symbol, NO bp ", index, symbol)
+                if index[0] == index[1] and pi.get((index[0],index[1],symbol)) > 0: #non terminal to existing terminal
+                    return "("+symbol+" "+sent[index[0]]+")"
                 return -1
-            print("expend: index, symbol, bp ", index, symbol, bp.get((index[0], index[1], symbol)))
+            #print("expend: index, symbol, bp ", index, symbol, bp.get((index[0], index[1], symbol)))
             rule, s = bp[index[0], index[1], symbol]
             Y, Z = rule[1]
             if pcfg.is_terminal(symbol):
@@ -113,4 +113,3 @@ if __name__ == '__main__':
     for sent in sents_to_parse:
         print cnf_cky(cnf_pcfg, sent)
         print non_cnf_cky(non_cnf_pcfg, sent)
-        break
