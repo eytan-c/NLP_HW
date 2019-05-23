@@ -41,10 +41,10 @@ def cnf_cky(pcfg, sent):
 			for s in xrange(i,j):
 				if len(rule[1]) > 1:
 					# curr_pi = Q.get(rule,0.0) * pi.get((i, s, rule[1][0]),0) * pi.get((s+1, j, rule[1][1]),0)
-					curr_pi = Q.get(rule, 0.0) * pi[(i, s, rule[1][0])] * pi[(s + 1, j, rule[1][1])]
+					curr_pi = Q.get(rule, 0.0) * pi[(i, s, rule[1][0])] * pi[(s+1, j, rule[1][1])]
 					if curr_pi > best_pi:
 						best_pi = curr_pi
-						best_rule = rule
+						best_rule = (rule, s)
 		return best_pi, best_rule
 	
 	# from Q1:
@@ -61,7 +61,23 @@ def cnf_cky(pcfg, sent):
 	#         return "("+symbol+" "+expansion_filled+")"
 	
 	def get_derivation(bp):
-		return "tree"
+		tree = ''
+		def expand(index, symbol):
+			if bp.get((index[0],index[1], symbol)) is None: return -1
+			rule, s = bp[index[0],index[1], symbol]
+			Y, Z = rule[1]
+			if pcfg.is_terminal(symbol):
+				return symbol
+			else:
+				Y_expand = expand((index[0], s), Y)
+				Z_expand = expand((s+1, index[1]), Z)
+				if Y_expand == -1 or Z_expand == -1:
+					return -1
+				return "("+ symbol + ' ' + Y_expand + ' ' + Z_expand +")"
+		tree = expand((0,n-1), 'ROOT')
+		if tree == -1:
+			return "FAILED TO PARSE!"
+		return tree
 	
 	print(sent)
 	# print(pcfg._rules)

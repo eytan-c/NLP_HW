@@ -41,6 +41,7 @@
 2	Noun	Adj Noun
 1   END .
 1   END !
+1   NP  Sally
 
 # Vocabulary.  Your program can see that "ate" is a terminal
 # symbol because there exists no rule for rewriting it.
