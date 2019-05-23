@@ -33,10 +33,11 @@ def cnf_cky(pcfg, sent):
 				q_dict[(left, tuple(der[0]))] = der[1] / float(denom)
 		return q_dict
 	
-	def updatePi(pi, i, j, Q):
+	def updatePi(pi, i, j, Q, X):
 		best_pi = float('-inf')
 		best_rule = ()
 		for rule in Q.keys():
+			if rule[0] != X: continue
 			for s in xrange(i,j):
 				if len(rule[1]) > 1:
 					# curr_pi = Q.get(rule,0.0) * pi.get((i, s, rule[1][0]),0) * pi.get((s+1, j, rule[1][1]),0)
@@ -63,12 +64,12 @@ def cnf_cky(pcfg, sent):
 		return "tree"
 	
 	print(sent)
-	print(pcfg._rules)
+	# print(pcfg._rules)
 	sent = sent.split(' ')
 	n = len(sent)
 	# N = get_N(0, n)  # get all tags
 	Q = get_q(pcfg)
-	print('Q:', Q)
+	# print('Q:', Q)
 	N = pcfg._rules.keys()
 	pi = init(n, N, Q)
 	bp = {}
@@ -77,10 +78,11 @@ def cnf_cky(pcfg, sent):
 	for (i,j) in indices:
 			# for X in get_N(i, j):
 			for X in N:
-				pi_max, pi_arg_max = updatePi(pi, i, j, Q)
+				pi_max, pi_arg_max = updatePi(pi, i, j, Q, X)
 				pi[i, j, X] = pi_max
 				bp[i, j, X] = pi_arg_max
 	print 'Pi after: %s' % pi
+	print 'BP: %s' % bp
 	return get_derivation(bp)
 	### END YOUR CODE
 	return "FAILED TO PARSE!"
@@ -102,3 +104,4 @@ if __name__ == '__main__':
 	for sent in sents_to_parse:
 		print cnf_cky(cnf_pcfg, sent)
 		print non_cnf_cky(non_cnf_pcfg, sent)
+		break
