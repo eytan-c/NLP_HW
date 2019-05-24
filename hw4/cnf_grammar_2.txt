@@ -34,16 +34,31 @@
 #    Adj = adjective
 
 1	S	NP VP
+1   S   NP Verb
+1   S   PRP VP
+1   S   S PP
+1   NP  PP NP
+1   PP  Prep S
+1   PP  Prep.NP PP
+1   Prep.NP Prep NP
+1   PP  Prep NP
 1	VP	Verb NP
+#1   VP  VS NP
+1   VS  Verb CC.Verb
+#1   VP  VBZG NP
 
 1	NP	Det Noun
 1   NP  NP CC.NP
 1   CC.NP   CC NP
+#1   VP  Verb CC.VP
+1   CC.Verb CC Verb
+1   CC.Verb CC CC.Verb
 0.1	NP	NP PP
 1	PP	Prep NP
-2	Noun	Adj Noun
+2   Noun    Adj Noun
 1   END .
 1   END !
+#1   VBZG    VBZ VBG
 
 # Vocabulary.  Your program can see that "ate" is a terminal
 # symbol because there exists no rule for rewriting it.
@@ -83,6 +98,7 @@
 1	Adj	perplexed
 1	Adj	pickled
 1   Adj lazy
+1   Adj very
 
 1	Prep	with
 1	Prep	on
