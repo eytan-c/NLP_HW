@@ -35,13 +35,15 @@ def cnf_cky(pcfg, sent):
         best_rule = ()
         for rule in Q.keys():
             if rule[0] != X: continue
-            for s in xrange(i, j):
-                if len(rule[1]) > 1:
-                    # curr_pi = Q.get(rule,0.0) * pi.get((i, s, rule[1][0]),0) * pi.get((s+1, j, rule[1][1]),0)
+            if len(rule[1]) > 1:
+                for s in xrange(i, j):
                     curr_pi = Q.get(rule, 0.0) * pi[(i, s, rule[1][0])] * pi[(s + 1, j, rule[1][1])]
                     if curr_pi > best_pi:
                         best_pi = curr_pi
                         best_rule = (rule, s)
+            elif i == j: # Unary rule
+                print("len(rule[1]) <= 1",rule)
+                print("i,j", i, j)
         return best_pi, best_rule
 
     def get_derivation(bp):
@@ -55,9 +57,9 @@ def cnf_cky(pcfg, sent):
                 #     return "(" + symbol + " " + sent[index[0]] + ")"
                 if pi.get((index[0], index[1], symbol)) > 0:  # non terminal to existing terminal
                     return "(" + symbol + " " + sent[index[0]] + ")"
-                else:
-                    return -1
-            # print("expend: index, symbol, bp ", index, symbol, bp.get((index[0], index[1], symbol)))
+            else:
+                print("index[0], index[1], symbol",index[0], index[1], symbol)
+                return -1
             rule, s = bp[index[0], index[1], symbol]
             Y, Z = rule[1]
             if pcfg.is_terminal(symbol):
@@ -83,13 +85,10 @@ def cnf_cky(pcfg, sent):
 
     indices = [ind for gap in xrange(n) for ind in np.ndindex((n, n)) if ind[0] < ind[1] and ind[1] - ind[0] == gap]
     for (i, j) in indices:
-        # for X in get_N(i, j):
         for X in N:
             pi_max, pi_arg_max = updatePi(pi, i, j, Q, X)
             pi[i, j, X] = pi_max
             bp[i, j, X] = pi_arg_max
-    # print 'Pi after: %s' % pi
-    # print 'BP: %s' % bp
     res = get_derivation(bp)
     if res != "FAILED TO PARSE!":
         return res
@@ -101,56 +100,32 @@ def non_cnf_cky(pcfg, sent):
     ### YOUR CODE HERE
     def cut_it(rule, j):
         # print("cut_it: rule is-",rule)
-        if len(pcfg._rules[rule[0]][j][0]) > 2:  # more than 2 words in right hand side of rule
+        if len(pcfg._rules[rule[0]][j][0]) >= 2:  # more than 2 words in right hand side of rule
             first_word = pcfg._rules[rule[0]][j][0][0]  # first word
             rest_of_words = pcfg._rules[rule[0]][j][0][1:]
             rest_of_words_joints = ''.join([x for x in rest_of_words])
             new_rhs = [first_word, rest_of_words_joints]  # [FIRST_WORD, rest_of_words]
             weight = pcfg._rules[rule[0]][j][1]
 
-            # org_symbol -> [FIRST_WORD, rest_of_words] (non-terminal -> [non-terminal,non-terminal])
-            # pcfg._rules[rule[0]][j] = (new_rhs, weight)
+            # org_symbol -> [FIRST_WORD, rest_of_words] (non-terminal -> [non-terminal,non-terminal])t)
             pcfg.add_rule(rule[0], new_rhs, weight)
-
-            # FIRST_WORD - > first_word (non terminal -> terminal)
-            # pcfg._rules[new_rhs[0]] = [([first_word], weight)]
-            pcfg.add_rule(new_rhs[0], [first_word], weight)
-
-            # print("cut_it: new_rhs", new_rhs)
-            # print("cut_it: pcfg._rules[new_rhs[0]]", pcfg._rules[new_rhs[0]])
-
+            # delete previous rule's weigth
+            pcfg._rules[rule[0]][j] = (pcfg._rules[rule[0]][j][0],0)
+            # FIRST_WORD -> [FIRST_WORD] (non-terminal -> [terminal])
+            pcfg.add_rule(first_word, [first_word], weight)
             if len(rest_of_words) > 1:
                 # rest_of_words_joints - > [rest_of_words] (non-terminal -> list of terminals)
-                # pcfg._rules[new_rhs[1]] = [(rest_of_words, weight)]
-                pcfg.add_rule(new_rhs[1], rest_of_words, weight)
-
-                # print("len(rest_of_words) > 1")
-                # print("cut_it: pcfg._rules[new_rhs[1]]", pcfg._rules[new_rhs[1]])
-                # print("")
-                cut_it((new_rhs[1], pcfg._rules[new_rhs[1]]), 0)
+                pcfg.add_rule(rest_of_words_joints, rest_of_words, weight)
+                cut_it((rest_of_words_joints, pcfg._rules[rest_of_words_joints]), 0)
             else:
-                # pcfg._rules[new_rhs[1]] = [([new_rhs[1]], weight)]  # Last_WORD - > last_word (non terminal -> terminal)
-                pcfg.add_rule(new_rhs[1], [new_rhs[1]], weight)
-
-                # print("cut_it: pcfg._rules[new_rhs[1]]", pcfg._rules[new_rhs[1]])
-                # print("")
-        else:  # there are exactly 2 terminals in left side of rule
-            first_word = pcfg._rules[rule[0]][j][0][0]  # first word
-            second_word = pcfg._rules[rule[0]][j][0][1]  # second word
-            new_rhs = [first_word, second_word]
-            weight = pcfg._rules[rule[0]][j][1]
-
-            #pcfg._rules[rule[0]][j] = (new_rhs, weight)  # non-terminal -> (non-terminal, non-terminal)
-            pcfg.add_rule(rule[0], new_rhs, weight)
-            #pcfg._rules[new_rhs[0]] = [([first_word], weight)]  # non-terminal -> non-terminal
-            pcfg.add_rule(new_rhs[0], [first_word], weight)
-            #pcfg._rules[new_rhs[1]] = [([second_word], weight)]  # non-terminal -> non-terminal
-            pcfg.add_rule(new_rhs[1], [second_word], weight)
+                second_word = rest_of_words[0]
+                pcfg.add_rule(second_word, [second_word], weight)
 
     all_rules = pcfg._rules.items()
     for i, X in enumerate(all_rules):
         for j, rhs in enumerate(X[1]):
-            if len(rhs[0]) > 2:
+            #if len(rhs[0]) >= 2 and:
+            if len(rhs[0]) >= 2 and rhs[0][0] not in pcfg._rules and rhs[0][1] not in pcfg._rules : # non-terminal -> list of terminals (len at least 2, not unary)
                 # print("all_rules[i]:", all_rules[i])
                 # print("all_rules[i][1]:", all_rules[i][1])
                 # print("all_rules[i][1][j]:", all_rules[i][1][j])
@@ -174,6 +149,6 @@ if __name__ == '__main__':
     non_cnf_pcfg = PCFG.from_file_assert(sys.argv[2])
     sents_to_parse = load_sents_to_parse(sys.argv[3])
     for sent in sents_to_parse:
-        print cnf_cky(cnf_pcfg, sent)
+        #print cnf_cky(cnf_pcfg, sent)
         print non_cnf_cky(non_cnf_pcfg, sent)
         break

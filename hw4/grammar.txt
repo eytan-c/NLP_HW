@@ -61,8 +61,9 @@
 1	Noun	president
 1	Noun	sandwich
 1	Noun	pickle
-1	Noun	chief of staff
-1	Noun	kid of chief staff
+#1	Noun	chief of staff
+1	Noun	prime minister
+#1	Noun	kid of prime minister
 1	Noun	floor
 
 1	Adj	fine
