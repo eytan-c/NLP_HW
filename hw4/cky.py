@@ -15,7 +15,7 @@ def load_sents_to_parse(filename):
 def cnf_cky(pcfg, sent):
     ### YOUR CODE HERE
     import numpy as np
-    def init(n, N, Q):  # need to implement
+    def init(n, N, Q):
         pi = {}
         for X in N:
             for i in xrange(n):
@@ -36,6 +36,11 @@ def cnf_cky(pcfg, sent):
         for rule in Q.keys():
             if rule[0] != X: continue
             if len(rule[1]) > 1:
+                if i == 0 and j==1 and X=='NP' and rule[1][0]=='prime':
+                    pi1 = pi[(0 + 1, j, rule[1][1])]
+                    pi2 = pi[(i, 0, rule[1][0])]
+                    q1 = Q.get(rule, 0.0)
+                    print("debug")
                 for s in xrange(i, j):
                     curr_pi = Q.get(rule, 0.0) * pi[(i, s, rule[1][0])] * pi[(s + 1, j, rule[1][1])]
                     if curr_pi > best_pi:
@@ -51,15 +56,11 @@ def cnf_cky(pcfg, sent):
 
         def expand(index, symbol):
             if bp.get((index[0], index[1], symbol)) is None:
-                # print("expend: index, symbol, NO bp ", index, symbol)
-                # if index[0] == index[1] and pi.get(
-                #          (index[0], index[1], symbol)) > 0:  # non terminal to existing terminal
-                #     return "(" + symbol + " " + sent[index[0]] + ")"
                 if pi.get((index[0], index[1], symbol)) > 0:  # non terminal to existing terminal
                     return "(" + symbol + " " + sent[index[0]] + ")"
-            else:
-                print("index[0], index[1], symbol",index[0], index[1], symbol)
-                return -1
+                else:
+                    print("index[0], index[1], symbol",index[0], index[1], symbol)
+                    return -1
             rule, s = bp[index[0], index[1], symbol]
             Y, Z = rule[1]
             if pcfg.is_terminal(symbol):
@@ -70,6 +71,9 @@ def cnf_cky(pcfg, sent):
                 if Y_expand == -1 or Z_expand == -1:
                     return -1
                 return "(" + symbol + ' ' + Y_expand + ' ' + Z_expand + ")"
+
+        for item in sorted(bp.items()):
+            print(item)
 
         tree = expand((0, n - 1), 'ROOT')
         if tree == -1:
@@ -121,6 +125,7 @@ def non_cnf_cky(pcfg, sent):
                 second_word = rest_of_words[0]
                 pcfg.add_rule(second_word, [second_word], weight)
 
+    original_non_terminals = pcfg._rules.keys()
     all_rules = pcfg._rules.items()
     for i, X in enumerate(all_rules):
         for j, rhs in enumerate(X[1]):
@@ -137,7 +142,98 @@ def non_cnf_cky(pcfg, sent):
     for rule in sorted(pcfg._rules.items()):
         print(rule)
 
-    return cnf_cky(pcfg, sent)
+    #return cnf_cky(pcfg, sent)
+    #################################### from CNF version ######################################
+    import numpy as np
+    def init(n, N, Q):
+        pi = {}
+        for X in N:
+            for i in xrange(n):
+                pi[i, i, X] = Q.get((X, (sent[i],)), 0)
+        return pi
+
+    def get_q(grammar):
+        q_dict = {}
+        for left, right in grammar._rules.items():
+            denom = sum([d[1] for d in right])
+            for der in right:
+                q_dict[(left, tuple(der[0]))] = der[1] / float(denom)
+        return q_dict
+
+    def updatePi(pi, i, j, Q, X):
+        best_pi = float('-inf')
+        best_rule = ()
+        for rule in Q.keys():
+            if rule[0] != X: continue
+            if len(rule[1]) > 1:
+                if i == 0 and j==1 and X=='NP' and rule[1][0]=='prime':
+                    pi1 = pi[(0 + 1, j, rule[1][1])]
+                    pi2 = pi[(i, 0, rule[1][0])]
+                    q1 = Q.get(rule, 0.0)
+                    print("debug")
+                for s in xrange(i, j):
+                    curr_pi = Q.get(rule, 0.0) * pi[(i, s, rule[1][0])] * pi[(s + 1, j, rule[1][1])]
+                    if curr_pi > best_pi:
+                        best_pi = curr_pi
+                        best_rule = (rule, s)
+            elif i == j: # Unary rule
+                print("len(rule[1]) <= 1",rule)
+                print("i,j", i, j)
+        return best_pi, best_rule
+
+    def get_derivation(bp):
+        tree = ''
+
+        def expand(index, symbol):
+            if bp.get((index[0], index[1], symbol)) is None:
+                if pi.get((index[0], index[1], symbol)) > 0:  # non terminal to existing terminal
+                    if symbol in original_non_terminals:
+                        return "(" + symbol + " " + sent[index[0]] + ")"
+                    else:
+                        return sent[index[0]]
+                else:
+                    print("index[0], index[1], symbol",index[0], index[1], symbol)
+                    return -1
+            rule, s = bp[index[0], index[1], symbol]
+            Y, Z = rule[1]
+            if pcfg.is_terminal(symbol):
+                return symbol
+            else:
+                Y_expand = expand((index[0], s), Y)
+                Z_expand = expand((s + 1, index[1]), Z)
+                if Y_expand == -1 or Z_expand == -1:
+                    return -1
+                if Y not in original_non_terminals and Z not in original_non_terminals and rule[0] not in original_non_terminals:
+                        return Y_expand + ' ' + Z_expand
+                else:
+                    return "(" + symbol + ' ' + Y_expand + ' ' + Z_expand + ")"
+
+        for item in sorted(bp.items()):
+            print(item)
+
+        tree = expand((0, n - 1), 'ROOT')
+        if tree == -1:
+            return "FAILED TO PARSE!"
+        return tree
+
+    sent = sent.split(' ')
+    n = len(sent)
+    Q = get_q(pcfg)
+    N = pcfg._rules.keys()
+    pi = init(n, N, Q)
+    bp = {}
+
+    indices = [ind for gap in xrange(n) for ind in np.ndindex((n, n)) if ind[0] < ind[1] and ind[1] - ind[0] == gap]
+    for (i, j) in indices:
+        for X in N:
+            pi_max, pi_arg_max = updatePi(pi, i, j, Q, X)
+            pi[i, j, X] = pi_max
+            bp[i, j, X] = pi_arg_max
+    res = get_derivation(bp)
+    if res != "FAILED TO PARSE!":
+        return res
+    ############################################################################################
+
     ### END YOUR CODE
     return "FAILED TO PARSE!"
 
