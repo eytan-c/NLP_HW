@@ -126,7 +126,7 @@
 1	Noun	president
 1	Noun	sandwich
 1	Noun	pickle
-#1	Noun	chief of staff
+1	Noun	chief of staff
 1	Noun	floor
 1   Noun    Sally
 1   Noun    desk
