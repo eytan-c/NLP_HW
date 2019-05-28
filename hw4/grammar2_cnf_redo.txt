@@ -19,9 +19,28 @@
 
 # Rules for creating full sentences.
 
-1	ROOT	S .
-1	ROOT	S !
-1	ROOT	is it true that S ?     # mixing terminals and nonterminals is ok.
+#1	ROOT	S .
+#1	ROOT	S !
+#1	ROOT	is it true that S ?     # mixing terminals and nonterminals is ok.
+
+###################
+### CNF Fixes for sentence creation
+###################
+1   ROOT    S End
+1   ROOT    IsItTrueThat.S Question
+
+1   IsItTrueThat.S   Is ItTrueThat.S
+1   ItTrueThat.S  It TrueThat.S
+1   TrueThat.S True That.S
+1   That.S  That S
+1   True    true
+1   That    that
+1   It  it
+1   Is  is
+1   End .
+0.5   End !
+1   Question    ?
+
 
 # The basic grammar rules.  Here's what the abbreviations stand for:
 #    S  = sentence
@@ -37,7 +56,29 @@
 1	NP	Det Noun
 0.1	NP	NP PP
 1	PP	Prep NP
-2	Noun	Adj Noun
+2   Noun    Adj Noun
+
+###################
+### CNF Fixes for rules
+###################
+## none
+
+###################
+### grammar2 rules expansion
+###################
+1   S   Name VP
+1   S   NP  VerbI
+1   S   Name VerbI
+
+1   Name    Name Conj.NP
+1   Name    Name Conj.Name
+
+1   VP  Verb Conj.VP
+1   VP
+
+1   Conj.NP Conj NP
+1   Conj.Name   Conj Name
+1   Conj.VP Conj VP
 
 # Vocabulary.  Your program can see that "ate" is a terminal
 # symbol because there exists no rule for rewriting it.
@@ -58,7 +99,7 @@
 1	Noun	president
 1	Noun	sandwich
 1	Noun	pickle
-1	Noun	chief of staff
+#1	Noun	chief of staff
 1	Noun	floor
 
 1	Adj	fine
@@ -70,3 +111,33 @@
 1	Prep	on
 1	Prep	under
 1	Prep	in
+
+
+###################
+### CNF Fixes for Vocab
+###################
+1   Noun    Chief OfStaff
+1   OfStaff Of Staff
+1   Chief   chief
+1   Of  of
+1   Staff   staff
+
+
+###################
+### grammar2 Vocab expansion
+###################
+1   Name    Sally
+1   Name    John
+
+1   Conj    and
+1   Conj    or
+
+1   Adj lazy
+
+1   Qual    very
+
+1   Prn it
+
+1   VerbI   sighed
+
+1   Verb    thought
