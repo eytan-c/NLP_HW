@@ -20,6 +20,7 @@
 # Rules for creating full sentences.
 
 1   ROOT    S End
+#1   ROOT    SP End
 0.1	ROOT	IsItTrueThat.S Qu     # mixing terminals and nonterminals is ok.
 
 #############
@@ -59,6 +60,28 @@
 0.1   S   PRP VP
 0.2   S   It VP
 
+1   S   NPPS VPPS
+1   S   NPPP VPPP
+0.25   S   NPPS VerbIPS
+0.25   S   NPPP VerbIPP
+0.1   S   NamePS VPPS
+0.1   S   NamePP VPPP
+
+1   NPPS    SingDet SingNoun
+1   NPPS    Prep NPPS
+1   NPPP    PlurDet PlurNoun
+1   NPPP    Prep NP
+1   NPPP    PlurDet Noun
+1   NPPP    NP CC.NP
+
+1   NamePP  NamePS CC.Name
+1   NamePP  NamePS CC.NP
+
+1	VPPS	VerbTPS NP
+0.5	VPPS	VerbTPS Name
+1	VPPP	VerbTPP NP
+0.5	VPPP	VerbTPP Name
+
 1   SBAR    Comp S
 0.01   SBAR    Prep S
 
@@ -80,6 +103,11 @@
 0.01   NP  NP CC.NP
 0.1	NP	NP PP
 0.001   NP  Prep NP
+0.01    NP  NP  Comp.SV
+
+1   Comp.SV Comp SV
+
+1   SV  VerbT NP
 
 1   CC.NP   CC NP
 1   CC.Noun CC Noun
@@ -140,9 +168,24 @@
 1   Verb5   thought
 1   Verb5   understood
 
+1   VerbTPS chooses
+1   VerbTPP choose
+1   VerbTPS eats
+1   VerbTPP eat
+
+1   VerbIPS eats
+1   VerbIPP eat
+1   VerbIPS sighs
+1   VerbIPP sigh
+
 1	Det	the
 1	Det	a
 1	Det	every
+
+1	SingDet	the
+1	SingDet	a
+1	PlurDet	the
+1	PlurDet	every
 
 1	Noun	president
 1	Noun	sandwich
@@ -154,6 +197,14 @@
 1   Noun    proposal
 #1   Noun    thought
 #1   Noun    it
+
+1	SingNoun	president
+1	SingNoun	sandwich
+1	SingNoun	pickle
+1	SingNoun	floor
+1   SingNoun    desk
+1   SingNoun    proposal
+
 
 1	Adj	fine
 1	Adj	delicious
@@ -173,8 +224,11 @@
 
 1   PRP it
 
-1   Name  Sally
+1   Name    Sally
 1   Name    John
+
+1   NamePS    Sally
+1   NamePS    John
 
 1   CC  and
 1   CC  or
@@ -182,3 +236,5 @@
 1   IS  is
 
 1   VerbTing   eating
+
+1   PlurNoun    citizens
