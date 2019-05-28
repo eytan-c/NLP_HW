@@ -217,7 +217,10 @@ def non_cnf_cky(pcfg, sent):
                     q1 = Q.get(rule, 0.0)
                     print("debug")
                 for s in xrange(i, j):
-                    curr_pi = Q.get(rule, 0.0) * pi[(i, s, rule[1][0])] * pi[(s + 1, j, rule[1][1])]
+                    if pi[(i, s, rule[1][0])] == float('-inf') and pi[(s + 1, j, rule[1][1])] == float('-inf'):
+                        curr_pi = float('-inf')
+                    else:
+                        curr_pi = Q.get(rule, 0.0) * pi[(i, s, rule[1][0])] * pi[(s + 1, j, rule[1][1])]
                     if curr_pi > best_pi:
                         best_pi = curr_pi
                         best_rule = (rule, s)
@@ -293,5 +296,5 @@ if __name__ == '__main__':
     for sent in sents_to_parse:
         print sent
         print cnf_cky(cnf_pcfg, sent)
-        # print non_cnf_cky(non_cnf_pcfg, sent)
+        print non_cnf_cky(non_cnf_pcfg, sent)
         
