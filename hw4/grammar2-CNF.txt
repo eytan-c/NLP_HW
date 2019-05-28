@@ -19,17 +19,15 @@
 
 # Rules for creating full sentences.
 
-#1	ROOT	S .
-#1	ROOT	S !
 1   ROOT    S End
-1	ROOT	IsItTrueThat.S Qu     # mixing terminals and nonterminals is ok.
+0.1	ROOT	IsItTrueThat.S Qu     # mixing terminals and nonterminals is ok.
 
 #############
 ## Fixes for CNF form
 #############
 1   Qu  ?
 1   End .
-1   End !
+0.5   End !
 1   IsItTrueThat.S   Is ItTrueThat.S
 1   ItTrueThat.S  It TrueThat.S
 1   TrueThat.S True That.S
@@ -58,31 +56,25 @@
 0.2   S   Name VP
 0.1   S   Name VerbI
 0.1   S   S PP
-#1   S   S CC.S
 0.1   S   PRP VP
-#1   S   It VerbI
 0.2   S   It VP
 
 1   SBAR    Comp S
+1   SBAR    Prep S
 
 1   PP  Prep NP
 0.1   PP  Comp S
 
 1	VP	VerbT NP
 0.5	VP	VerbT Name
-#1   VP  VerbI
-#1   VP  VerbD NP.NP
 0.01   VP  VP CC.VP
 0.2   VP  VP PP
 0.4   VP  Is Adj
 0.2   VP  Verb5 SBAR
 0.2   VP  Verb6 NP.SBAR
-#1   VP  V7 NP.NP.SBAR
 0.5   VP  VbTing NP
 
-#1   NP.NP   NP NP
 1   NP.SBAR   NP SBAR
-#1   NP.NP.SBAR  NP NP.SBAR
 
 1	NP	Det Noun
 0.01   NP  NP CC.NP
@@ -92,7 +84,6 @@
 1   CC.NP   CC NP
 1   CC.Noun CC Noun
 1   CC.VP   CC VP
-#1   CC.S    CC S
 1   CC.SBAR CC SBAR
 1   CC.VerbI    CC VerbI
 1   CC.VerbT    CC VerbT
@@ -102,14 +93,12 @@
 0.01   Noun    Quan Adj.Noun
 1   Adj.Noun    Quan Adj.Noun
 1   Adj.Noun    Adj Noun
-#1   Noun    Noun Noun
 1   Noun    Noun PP
 #1   Noun    Noun CC.Noun
 0.1 Noun    Noun CC.NP
 0.1   Noun    Noun CC.Name
 
 0.1   Name    Name CC.Name
-#0.1   Name    Name CC.Noun
 0.01   Name    Name CC.NP
 
 1   VerbI   VerbI CC.VerbI
@@ -171,6 +160,7 @@
 1	Adj	perplexed
 1	Adj	pickled
 1   Adj lazy
+
 1   Quan    very
 
 1	Prep	with
