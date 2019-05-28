@@ -25,7 +25,11 @@ def cnf_cky(pcfg, sent):
     def get_q(grammar):
         q_dict = {}
         for left, right in grammar._rules.items():
+            # if sent == ['the', 'president', 'thought', 'that', 'a', 'sandwich', 'sighed', '.'] and left == 'S':
+            #     print "Break point"
             denom = sum([d[1] for d in right])
+            # if denom == 0:
+            #     print "Left: %s, Right: %s" % (left, right)
             for der in right:
                 q_dict[(left, tuple(der[0]))] = der[1] / float(denom)
         return q_dict
@@ -43,7 +47,42 @@ def cnf_cky(pcfg, sent):
                     print("debug")
                 for s in xrange(i, j):
                     curr_pi = Q.get(rule, 0.0) * pi[(i, s, rule[1][0])] * pi[(s + 1, j, rule[1][1])]
+                    # if sent == ['it', 'perplexed', 'the', 'president', 'that', 'a', 'sandwich', 'ate', 'Sally', '.']:
+                    #     if X == 'S' and i==0 and j==8:
+                    #         print "break point"
+                    #     if X == 'S' and i == 0 and j == 6:
+                    #         if rule[1] == ('NP','VerbI'):
+                    #             print "break point S"
+                    #     elif X == 'NP' and i == 0 and j == 5:
+                    #         if rule[1] == ('Det', 'Noun'):
+                    #             print "break point NP"
+                    #     elif X == 'Noun' and i == 1 and j == 5:
+                    #         print "break point Noun"
+                    #     elif X == 'Noun' and i == 1 and j == 6:
+                    #         print "break point Noun"
+                    # if sent == ['it', 'perplexed', 'the', 'president', 'that', 'a', 'sandwich', 'ate', 'Sally', '.']:
+                    #     if (X == 'S' and i == 0 and j == 8) or (X=='VP' and i==1 and j==8) or (i==2 and j==8 and X=='NP.SBAR'):
+                    #         print "Rule: %s, curr_pi: %s, s: %s" % (rule, curr_pi, s)
+                    #     elif X == 'NP' and i == 0 and j == 5:
+                    #         print "Rule: %s, curr_pi: %s, s: %s" % (rule, curr_pi, s)
+                    #     elif X == 'Noun' and i == 1 and j == 5:
+                    #         print "Rule: %s, curr_pi: %s, s: %s" % (rule, curr_pi, s)
+                    #     elif X == 'Noun' and i == 1 and j == 6:
+                    #         print "Rule: %s, curr_pi: %s, s: %s" % (rule, curr_pi, s)
+                    #     if curr_pi == float('nan'):
+                    #         print "curr_pi: %s" % curr_pi
+                    #         print "rule: %s, (i,j): (%s,%s), s: %s" % (rule,i,j,s)
+                    #         print "Q.get: %s, pi[%i,%s,%s]: %s, pi[%s,%s,%s]: %s" % ( Q.get(rule, 0.0),i,s, rule[1][0], pi[(i, s, rule[1][0])], s + 1, j,rule[1][1], pi[(s + 1, j, rule[1][1])])
                     if curr_pi > best_pi:
+                        # if sent == ['it', 'perplexed', 'the', 'president', 'that', 'a', 'sandwich', 'ate', 'Sally', '.']:
+                        #     if X == 'S' and i == 0 and j == 8:
+                        #         print "Pi update!"
+                        #     elif X == 'NP' and i == 0 and j == 5:
+                        #         print "Pi update!"
+                        #     elif X == 'Noun' and i == 1 and j == 5:
+                        #         print "Pi update!"
+                        #     elif X == 'Noun' and i == 1 and j == 6:
+                        #         print "Pi update!"
                         best_pi = curr_pi
                         best_rule = (rule, s)
             elif i == j: # Unary rule
@@ -61,6 +100,8 @@ def cnf_cky(pcfg, sent):
                 else:
                     print("index[0], index[1], symbol",index[0], index[1], symbol)
                     return -1
+            # if sent == ['it', 'perplexed', 'the', 'president', 'that', 'a', 'sandwich', 'ate', 'Sally', '.']:
+            #     print "break point"
             rule, s = bp[index[0], index[1], symbol]
             Y, Z = rule[1]
             if pcfg.is_terminal(symbol):
