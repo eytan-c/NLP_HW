@@ -46,7 +46,6 @@ def cnf_cky(pcfg, sent):
                     q1 = Q.get(rule, 0.0)
                     print("debug")
                 for s in xrange(i, j):
-                    curr_pi = Q.get(rule, 0.0) * pi[(i, s, rule[1][0])] * pi[(s + 1, j, rule[1][1])]
                     # if sent == ['it', 'perplexed', 'the', 'president', 'that', 'a', 'sandwich', 'ate', 'Sally', '.']:
                     #     if X == 'S' and i==0 and j==8:
                     #         print "break point"
@@ -60,6 +59,10 @@ def cnf_cky(pcfg, sent):
                     #         print "break point Noun"
                     #     elif X == 'Noun' and i == 1 and j == 6:
                     #         print "break point Noun"
+                    if pi[(i, s, rule[1][0])] == float('-inf') and pi[(s + 1, j, rule[1][1])] == float('-inf'):
+                        curr_pi = float('-inf')
+                    else:
+                        curr_pi = Q.get(rule, 0.0) * pi[(i, s, rule[1][0])] * pi[(s + 1, j, rule[1][1])]
                     # if sent == ['it', 'perplexed', 'the', 'president', 'that', 'a', 'sandwich', 'ate', 'Sally', '.']:
                     #     if (X == 'S' and i == 0 and j == 8) or (X=='VP' and i==1 and j==8) or (i==2 and j==8 and X=='NP.SBAR'):
                     #         print "Rule: %s, curr_pi: %s, s: %s" % (rule, curr_pi, s)
@@ -86,8 +89,9 @@ def cnf_cky(pcfg, sent):
                         best_pi = curr_pi
                         best_rule = (rule, s)
             elif i == j: # Unary rule
-                print("len(rule[1]) <= 1",rule)
-                print("i,j", i, j)
+                continue
+                # print("len(rule[1]) <= 1",rule)
+                # print("i,j", i, j)
         return best_pi, best_rule
 
     def get_derivation(bp):
@@ -98,7 +102,7 @@ def cnf_cky(pcfg, sent):
                 if pi.get((index[0], index[1], symbol)) > 0:  # non terminal to existing terminal
                     return "(" + symbol + " " + sent[index[0]] + ")"
                 else:
-                    print("index[0], index[1], symbol",index[0], index[1], symbol)
+                    # print("index[0], index[1], symbol",index[0], index[1], symbol)
                     return -1
             # if sent == ['it', 'perplexed', 'the', 'president', 'that', 'a', 'sandwich', 'ate', 'Sally', '.']:
             #     print "break point"
@@ -113,8 +117,8 @@ def cnf_cky(pcfg, sent):
                     return -1
                 return "(" + symbol + ' ' + Y_expand + ' ' + Z_expand + ")"
 
-        for item in sorted(bp.items()):
-            print(item)
+        # for item in sorted(bp.items()):
+        #     print(item)
 
         tree = expand((0, n - 1), 'ROOT')
         if tree == -1:
@@ -180,8 +184,8 @@ def non_cnf_cky(pcfg, sent):
                 # print("")
                 cut_it(all_rules[i], j)
 
-    for rule in sorted(pcfg._rules.items()):
-        print(rule)
+    # for rule in sorted(pcfg._rules.items()):
+    #     print(rule)
 
     #return cnf_cky(pcfg, sent)
     #################################### from CNF version ######################################
@@ -218,8 +222,9 @@ def non_cnf_cky(pcfg, sent):
                         best_pi = curr_pi
                         best_rule = (rule, s)
             elif i == j: # Unary rule
-                print("len(rule[1]) <= 1",rule)
-                print("i,j", i, j)
+                continue
+                # print("len(rule[1]) <= 1",rule)
+                # print("i,j", i, j)
         return best_pi, best_rule
 
     def get_derivation(bp):
@@ -233,7 +238,7 @@ def non_cnf_cky(pcfg, sent):
                     else:
                         return sent[index[0]]
                 else:
-                    print("index[0], index[1], symbol",index[0], index[1], symbol)
+                    # print("index[0], index[1], symbol",index[0], index[1], symbol)
                     return -1
             rule, s = bp[index[0], index[1], symbol]
             Y, Z = rule[1]
@@ -249,8 +254,8 @@ def non_cnf_cky(pcfg, sent):
                 else:
                     return "(" + symbol + ' ' + Y_expand + ' ' + Z_expand + ")"
 
-        for item in sorted(bp.items()):
-            print(item)
+        # for item in sorted(bp.items()):
+        #     print(item)
 
         tree = expand((0, n - 1), 'ROOT')
         if tree == -1:
@@ -286,6 +291,7 @@ if __name__ == '__main__':
     non_cnf_pcfg = PCFG.from_file_assert(sys.argv[2])
     sents_to_parse = load_sents_to_parse(sys.argv[3])
     for sent in sents_to_parse:
-        #print cnf_cky(cnf_pcfg, sent)
-        print non_cnf_cky(non_cnf_pcfg, sent)
-        break
+        print sent
+        print cnf_cky(cnf_pcfg, sent)
+        # print non_cnf_cky(non_cnf_pcfg, sent)
+        
