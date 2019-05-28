@@ -22,7 +22,27 @@
 #1	ROOT	S .
 #1	ROOT	S !
 1   ROOT    S End
-#1	ROOT	is it true that S ?     # mixing terminals and nonterminals is ok.
+#1	ROOT	IsItTrueThat.S Qu     # mixing terminals and nonterminals is ok.
+
+#############
+## Fixes for CNF form
+#############
+1   Qu  ?
+1   End .
+1   End !
+1   IsItTrueThat.S   Is ItTrueThat.S
+1   ItTrueThat.S  It TrueThat.S
+1   TrueThat.S True That.S
+1   That.S  That S
+1   It  it
+1   Is  is
+1   True    true
+1   That    that
+1   Noun    Chief OfStaff
+1   OfStaff    Of Staff
+1   Chief   chief
+1   Of  of
+1   Staff   staff
 
 # The basic grammar rules.  Here's what the abbreviations stand for:
 #    S  = sentence
@@ -34,10 +54,14 @@
 #    Adj = adjective
 
 1	S	NP VP
-1   S   NP VerbI
-1   S   S PP
-1   S   S CC.S
-1   S   PRP VP
+0.7   S   NP VerbI
+0.2   S   Name VP
+0.2   S   Name VerbI
+0.1   S   S PP
+#1   S   S CC.S
+0.1   S   PRP VP
+#1   S   It VerbI
+0.2   S   It VP
 
 1   SBAR    Comp S
 
@@ -45,42 +69,52 @@
 1   PP  Comp S
 
 1	VP	VerbT NP
+1	VP	VerbT Name
 #1   VP  VerbI
 #1   VP  VerbD NP.NP
-1   VP  VP CC.VP
-1   VP  VP PP
-#1   VP  IS Adj
-1   VP  Verb5 SBAR
-1   VP  Verb6 NP_SB
+0.01   VP  VP CC.VP
+0.2   VP  VP PP
+0.4   VP  Is Adj
+0.2   VP  Verb5 SBAR
+0.1   VP  Verb6 NP.SBAR
 #1   VP  V7 NP.NP.SBAR
-#1   VP  VbTing NP
+1   VP  VbTing NP
 
 #1   NP.NP   NP NP
-1   NP_SB   NP SBAR
+1   NP.SBAR   NP SBAR
 #1   NP.NP.SBAR  NP NP.SBAR
 
 1	NP	Det Noun
-1   NP  NP CC.NP
-0.1	NP	NP PP
-1   NP  Prep NP
+0.1   NP  NP CC.NP
+0.3	NP	NP PP
+0.001   NP  Prep NP
 
 1   CC.NP   CC NP
 1   CC.Noun CC Noun
 1   CC.VP   CC VP
-1   CC.S    CC S
+#1   CC.S    CC S
 1   CC.SBAR CC SBAR
 1   CC.VerbI    CC VerbI
 1   CC.VerbT    CC VerbT
+1   CC.Name CC Name
 
 2   Noun    Adj Noun
-1   Noun    Noun Noun
+0.01   Noun    Quan Adj.Noun
+1   Adj.Noun    Quan Adj.Noun
+1   Adj.Noun    Adj Noun
+#1   Noun    Noun Noun
 1   Noun    Noun PP
 1   Noun    Noun CC.Noun
+0.1   Noun    Noun CC.Name
+
+0.1   Name    Name CC.Name
+0.1   Name    Name CC.Noun
+0.01   Name    Name CC.NP
 
 1   VerbI   VerbI CC.VerbI
 1   VerbT   VerbT CC.VerbT
 
-1   VbTing  IS VerbTing
+1   VbTing  Is VerbTing
 
 # Vocabulary.  Your program can see that "ate" is a terminal
 # symbol because there exists no rule for rewriting it.
@@ -88,16 +122,13 @@
 # terminals, like "chief of staff") is called a "preterminal."  Notice 
 # that a preterminal is a special kind of nonterminal.
 
-1   End .
-1   End !
-
 1   VerbT   ate
 1   VerbT   wanted
 1   VerbT   kissed
 1   VerbT   understood
 1   VerbT   pickled
 1   VerbT   worked
-1   VerbT   thought
+#1   VerbT   thought
 #1   VerbT   sighed
 1   VerbT   is
 1   VerbT   eating
@@ -109,11 +140,10 @@
 1   VerbI   understood
 1   VerbI   pickled
 #1   VerbI   worked
-1   VerbI   thought
+#1   VerbI   thought
 1   VerbI   sighed
-1   VerbI   is
-1   VerbI   eating
-1   VerbI   perplexed
+#1   VerbI   is
+#1   VerbI   eating
 
 1   Verb6   perplexed
 
@@ -132,14 +162,14 @@
 1   Noun    desk
 1   Noun    proposal
 #1   Noun    thought
-1   Noun    it
+#1   Noun    it
 
 1	Adj	fine
 1	Adj	delicious
 1	Adj	perplexed
 1	Adj	pickled
 1   Adj lazy
-1   Adj very
+1   Quan    very
 
 1	Prep	with
 1	Prep	on
@@ -151,9 +181,10 @@
 
 1   PRP it
 
-1   NP  Sally
+1   Name  Sally
 
 1   CC  and
+1   CC  or
 
 1   IS  is
 
