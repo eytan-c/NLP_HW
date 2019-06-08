@@ -111,7 +111,7 @@ def pad_sequences(data, max_length):
     for sentence, labels in data:
         ### YOUR CODE HERE (~4-6 lines)
         diff = max_length - len(sentence)
-        padded_sent = sentence[:max_length] if diff <= 0 else sentence + zero_vector * diff
+        padded_sent = sentence[:max_length] if diff <= 0 else sentence + [zero_vector] * diff
         padded_labels = labels[:max_length] if diff <= 0 else labels + [zero_label] * diff
         masking = [True if i < len(sentence) else False for i in xrange(max_length)]
         ret.append((padded_sent, padded_labels, masking))
@@ -260,12 +260,12 @@ class RNNModel(NERModel):
         with tf.variable_scope("RNN"):
             for time_step in range(self.max_length):
                 ### YOUR CODE HERE (~6-10 lines)
-
+                pass
                 ### END YOUR CODE
 
         # Make sure to reshape @preds here.
         ### YOUR CODE HERE (~2-4 lines)
-
+        pass
         ### END YOUR CODE
 
         return preds
