@@ -38,7 +38,8 @@ class Config:
     n_word_features = 2 # Number of features for every word in the input.
     window_size = 1 # The size of the window to use.
     ### YOUR CODE HERE
-    n_window_features =  # The total number of features used for each window.
+    total_words = 2 * window_size + 1
+    n_window_features = n_word_features * (total_words)  # The total number of features used for each window.
     ### END YOUR CODE
     n_classes = 5
     dropout = 0.5
@@ -98,7 +99,17 @@ def make_windowed_data(data, start, end, window_size = 1):
     windowed_data = []
     for sentence, labels in data:
         ### YOUR CODE HERE (5-20 lines)
-
+        for i in range(len(sentence)):
+            window = []
+            for j in range(i-window_size,i+window_size+1):
+                if j < 0:
+                    window = window + start
+                elif j >= len(sentence):
+                    window += end
+                else:
+                    window += sentence[j]
+            windowed_data.append((window, labels[i]))
+        
         ### END YOUR CODE
     return windowed_data
 
@@ -207,7 +218,7 @@ class WindowModel(NERModel):
         x = self.add_embedding()
         dropout_rate = self.dropout_placeholder
         ### YOUR CODE HERE (~10-20 lines)
-
+        
         ### END YOUR CODE
         return pred
 
@@ -249,7 +260,7 @@ class WindowModel(NERModel):
             train_op: The Op for training.
         """
         ### YOUR CODE HERE (~1-2 lines)
-
+        
         ### END YOUR CODE
         return train_op
 
