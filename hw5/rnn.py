@@ -313,7 +313,7 @@ class RNNModel(NERModel):
                                           kernel_initializer=tf.contrib.layers.xavier_initializer(),
                                           bias_initializer=tf.constant_initializer(0.))
         dp_wrapper = tf.nn.rnn_cell.DropoutWrapper(gru_cell, output_keep_prob=dropout_rate)
-        outputs, state = tf.nn.dynamic_rnn(dp_wrapper, x, type=tf.float32)
+        outputs, state = tf.nn.dynamic_rnn(dp_wrapper, x, dtype=tf.float32)
         output_layer = tf.layers.dense(self.config.n_classes, name='FFNN',
                                        kernel_initializer=tf.contrib.layers.xavier_initializer(),
                                        bias_initializer=tf.constant_initializer(0.))
