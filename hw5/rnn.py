@@ -425,8 +425,8 @@ class RNNModel(NERModel):
         records.append(tf.summary.histogram("pred_histogram", pred))
         records.append(tf.summary.scalar("loss_summary", loss))
         self.probs = tf.nn.softmax(pred)
-        clip_probs = tf.clip_by_value(self.probs,0.01,0.99)
-        entropy = tf.reduce_mean(-tf.reduce_sum(clip_probs * tf.log(clip_probs),axis=1))
+        clip_probs = tf.clip_by_value(self.probs,1e-10,1.0)
+        entropy = tf.reduce_mean(-tf.reduce_sum(clip_probs * tf.log(clip_probs)))
         records.append(tf.summary.scalar(entropy))
         ### END YOUR CODE
 
