@@ -309,7 +309,15 @@ class RNNModel(NERModel):
             pred: tf.Tensor of shape (batch_size, max_length, n_classes)
         """
         ### YOUR CODE HERE (~4-6 lines)
-        preds =[]
+        gru_cell = tf.nn.rnn_cell.GRUCell(Config.hidden_size, name='cell',
+                                          kernel_initializer=tf.contrib.layers.xavier_initializer(),
+                                          bias_initializer=tf.constant_initializer(0.))
+        dp_wrapper = tf.nn.rnn_cell.DropoutWrapper(gru_cell, output_keep_prob=dropout_rate)
+        outputs, state = tf.nn.dynamic_rnn(dp_wrapper, x, type=tf.float32)
+        output_layer = tf.layers.dense(self.config.n_classes, name='FFNN',
+                                       kernel_initializer=tf.contrib.layers.xavier_initializer(),
+                                       bias_initializer=tf.constant_initializer(0.))
+        preds = output_layer(outputs)
         ### END YOUR CODE
 
         return preds
