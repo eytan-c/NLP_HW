@@ -591,7 +591,7 @@ def do_train(args):
                 output = model.output(session, dev_raw)
                 sentences, labels, predictions = zip(*output)
                 predictions = [[LBLS[l] for l in preds] for preds in predictions]
-                output = zip(sentences, labels, predictions)
+                output = list(zip(sentences, labels, predictions))
 
                 with open(model.config.conll_output, 'w') as f:
                     write_conll(f, output)
