@@ -422,6 +422,7 @@ class RNNModel(NERModel):
         records = []
 
         ### YOUR CODE HERE (~5-10 lines)
+        pred = tf.boolean_mask(pred, self.mask_placeholder)
         records.append(tf.summary.histogram("logit_histogram", pred))
         records.append(tf.summary.scalar("avg_loss", loss))
         self.probs = tf.nn.softmax(pred)
