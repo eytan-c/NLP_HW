@@ -412,9 +412,9 @@ def do_train(args):
             else:
                 # Save predictions in a text file.
                 output = model.output(session, dev_raw)
-                sentences, labels, predictions = zip(*output)
+                sentences, labels, predictions = list(zip(*output))
                 predictions = [[LBLS[l] for l in preds] for preds in predictions]
-                output = zip(sentences, labels, predictions)
+                output = list(zip(sentences, labels, predictions))
 
                 with open(model.config.conll_output, 'w') as f:
                     write_conll(f, output)
@@ -475,7 +475,7 @@ input> Germany 's representative to the European Union 's veterinary committee .
             while True:
                 # Create simple REPL
                 try:
-                    sentence = raw_input("input> ")
+                    sentence = input("input> ")
                     tokens = sentence.strip().split(" ")
                     for sentence, _, predictions in model.output(session, [(tokens, ["O"] * len(tokens))]):
                         predictions = [LBLS[l] for l in predictions]

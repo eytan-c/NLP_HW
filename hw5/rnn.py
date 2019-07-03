@@ -476,7 +476,8 @@ class RNNModel(NERModel):
     def predict_on_batch(self, sess, inputs_batch, mask_batch, summarize=False):
         feed = self.create_feed_dict(inputs_batch=inputs_batch, mask_batch=mask_batch)
         if summarize:
-            predictions, confidence = sess.run([tf.argmax(self.pred, axis=2), tf.reduce_max(self.probs, axis=2)], feed_dict=feed)
+            predictions, confidence = sess.run([tf.argmax(self.pred, axis=2), tf.reduce_max(self.probs, axis=2)],
+                                               feed_dict=feed)
             return predictions, confidence
         else:
             predictions = sess.run(tf.argmax(self.pred, axis=2), feed_dict=feed)
@@ -590,7 +591,7 @@ def do_train(args):
             else:
                 # Save predictions in a text file.
                 output = model.output(session, dev_raw)
-                sentences, labels, predictions = zip(*output)
+                sentences, labels, predictions = list(zip(*output))
                 predictions = [[LBLS[l] for l in preds] for preds in predictions]
                 output = list(zip(sentences, labels, predictions))
 
