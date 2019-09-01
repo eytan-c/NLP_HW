@@ -1,0 +1,40 @@
+import json
+import math
+path =  "/Downloads/SimplePPDB/"
+sim_ppdb_trim = []
+sim_ppdb_trim_dict = {}
+
+minimum = 3.5
+maximum = 5.46169
+diff = maximum - minimum
+
+
+with open(path+'SimplePPDB', 'r', encoding='utf-8') as f:
+    for line in f:
+        # "Praphrace Score, Simplification Score, Syntactic Category, Input Phrase, Output Phrase"
+        split = line.strip().split('\t')
+        prph_score_threshold = 3.5
+        above_threshold = float(split[0]) >= prph_score_threshold
+        one_word = len(split[3].split()) == 1
+        # print(type(split[0]))
+        if above_threshold and one_word:
+            sim_ppdb_trim.append(split)
+            if split[3] not in sim_ppdb_trim_dict.keys():
+                sim_ppdb_trim_dict[split[3]] = []
+            fraction = (float(split[0]) - minimum) / diff
+            norm = fraction * 10/2
+            factor = math.ceil(norm)
+            if factor == 0:
+                factor = 1
+            one_out = len(split[4].split()) == 1
+            for i in range(factor):
+                if one_out:
+                    sim_ppdb_trim_dict[split[3]].append((-1, split[4]))
+                else:
+                    sim_ppdb_trim_dict[split[3]].append((-1, tuple(split[4].split())))
+
+with open(path+'SPPDB_lexicon.json', 'w', encoding='utf-8') as j:
+    json.dump(sim_ppdb_trim_dict,j)
+
+with open(path+'SPPDB_trim.txt', 'w', encoding='utf-8') as j:
+    j.write(str(sim_ppdb_trim))
