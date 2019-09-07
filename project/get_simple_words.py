@@ -53,6 +53,7 @@ def normalize_string(s, only_heb=False):
 	if only_heb:
 		s = re.sub(r"[^א-ת.!?\"]+", r" ", s)
 		s = re.sub(r"(^|\s)\"(\w)", r"\1\2", re.sub(r"(\w)\"(\s|$)", r"\1\2", s))
+		# s = re.sub(r"(^|\s)\'(\w)", r"\1\2", re.sub(r"(\w)\'(\s|$)", r"\1\2", s))
 	else:
 		s = re.sub(r"[^a-zA-Zא-ת.!?\"]+", r" ", s)
 		s = re.sub(r"(^|\s)\"(\w)", r"\1\2", re.sub(r"(\w)\"(\s|$)", r"\1\2", s))

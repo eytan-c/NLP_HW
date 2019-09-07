@@ -1,5 +1,5 @@
 from nltk.translate import bleu_score
-
+from nltk.corpus import cmudict
 import numpy
 # import torch
 import pyphen
@@ -20,7 +20,16 @@ def iBLEU(input_sent, reference, candidate, alpha=0.9):
 	# print('ref_candidate:', '%s; ' % ref_candidate, 'input_candidate:','%s; ' % input_candidate)
 	# print('iBLEU (alpha * ref_candidate - (1 - alpha) * input_candidate) =\n %s' % (alpha * ref_candidate - (1 - alpha) * input_candidate))
 	return alpha * ref_candidate - (1 - alpha) * input_candidate
-	
+
+
+def get_syl_num(word, parser):
+	if word in parser.keys():
+		syllables = [len(list(y for y in x if y[-1].isdigit())) for x in parser[word]]
+		mean = sum(syllables) / len(syllables)
+		return mean
+	else:
+		return len(word)
+
 
 def FK(text, language='heb'):
 	"""
@@ -38,7 +47,13 @@ def FK(text, language='heb'):
 	num_sents = 0
 	num_syllables = 0
 	if language == 'eng':
-		parser = pyphen.Pyphen('en_us')
+		# parser = pyphen.Pyphen('en_us')
+		try:
+			parser = cmudict.dict()
+		except LookupError:
+			import nltk
+			nltk.download('cmudict')
+			parser = cmudict.dict()
 	else:
 		parser = None
 	# Gather numerical calculations
@@ -49,7 +64,8 @@ def FK(text, language='heb'):
 			if language == 'heb':  # heuristic that each letter is a syllable in hebrew
 				num_syllables += len(word)
 			elif language == 'eng':  # syllable parser for English
-				num_syllables += len(parser.inserted(word).split('-'))
+				# num_syllables += len(parser.inserted(word).split('-'))
+				num_syllables += get_syl_num(word, parser)
 	# print('Words, Sents, Syllables: %s, %s, %s' % (num_words, num_sents, num_syllables))
 	return 0.39 * (num_words / num_sents) + 11.8 * (num_syllables / num_words) - 15.59
 
