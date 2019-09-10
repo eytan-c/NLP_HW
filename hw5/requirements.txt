@@ -1,2 +1,2 @@
-tensorflow>=0.12
+tensorflow>=0.5
 matplotlib
