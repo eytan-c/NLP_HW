@@ -1,4 +1,4 @@
-from NLP_HW.project.get_simple_words import *
+from project.Utils.get_simple_words import *
 
 
 def get_entry_diffs(entries):
